@@ -1,0 +1,21 @@
+import { REDIS_KEY } from '../constant/response';
+import { prisma } from '../lib/db';
+import { RedisService } from '../service';
+
+class ProcessHelper {
+	async initializeCount() {
+		const blockCount = await prisma.blocks.count();
+		if (blockCount) {
+			RedisService.setString(REDIS_KEY.BLOCKS_COUNT, blockCount);
+		}
+		console.log('blocks:::: ', blockCount);
+
+		const txCount = await prisma.transactions.count();
+		if (txCount) {
+			RedisService.setString(REDIS_KEY.TRANSACTIONS_COUNT, txCount);
+		}
+
+		console.log('tx:::: ', txCount);
+	}
+}
+export default new ProcessHelper();
