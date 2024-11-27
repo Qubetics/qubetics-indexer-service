@@ -57,7 +57,7 @@ CREATE TABLE "Transactions" (
     "txFee" VARCHAR(255) NOT NULL DEFAULT '0',
     "value" TEXT NOT NULL DEFAULT '0',
     "token" TEXT NOT NULL DEFAULT '0',
-    "input" TEXT NOT NULL DEFAULT '',
+    "input" TEXT DEFAULT '',
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "Transactions_pkey" PRIMARY KEY ("id")
@@ -90,6 +90,7 @@ CREATE TABLE "Contracts" (
     "blockHash" VARCHAR(255) NOT NULL,
     "blockNumber" BIGINT NOT NULL,
     "bytecode" VARCHAR(65535) NOT NULL DEFAULT '',
+    "bytecodeHash" VARCHAR(255) NOT NULL DEFAULT '',
     "txHash" TEXT NOT NULL,
     "timestamp" BIGINT NOT NULL,
     "contractName" TEXT NOT NULL,
@@ -207,6 +208,7 @@ CREATE TABLE "DecodedLogs" (
 CREATE TABLE "ContractVerification" (
     "id" SERIAL NOT NULL,
     "contractAddress" TEXT NOT NULL,
+    "implementation" TEXT NOT NULL DEFAULT '',
     "sourceCode" JSONB NOT NULL DEFAULT '[]',
     "codeformat" TEXT NOT NULL,
     "contractname" TEXT NOT NULL DEFAULT '',
@@ -216,11 +218,13 @@ CREATE TABLE "ContractVerification" (
     "verificationType" INTEGER NOT NULL DEFAULT 0,
     "runs" INTEGER NOT NULL DEFAULT 200,
     "licenseType" INTEGER NOT NULL DEFAULT 0,
-    "constructorArguements" TEXT NOT NULL DEFAULT '',
+    "constructorArguements" JSONB NOT NULL DEFAULT '[]',
     "creationCode" TEXT NOT NULL DEFAULT '',
     "byteCode" TEXT NOT NULL DEFAULT '',
     "abi" JSONB NOT NULL DEFAULT '[]',
+    "abis" JSONB NOT NULL DEFAULT '[]',
     "errors" JSONB NOT NULL DEFAULT '[]',
+    "iconUrl" TEXT NOT NULL DEFAULT '',
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -238,6 +242,12 @@ CREATE UNIQUE INDEX "Blocks_blockhash_key" ON "Blocks"("blockhash");
 
 -- CreateIndex
 CREATE INDEX "Blocks_blocknumber_blockhash_idx" ON "Blocks"("blocknumber", "blockhash");
+
+-- CreateIndex
+CREATE INDEX "Blocks_createdAt_idx" ON "Blocks"("createdAt");
+
+-- CreateIndex
+CREATE INDEX "Blocks_miner_idx" ON "Blocks"("miner");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Transactions_txhash_key" ON "Transactions"("txhash");
@@ -274,6 +284,9 @@ CREATE UNIQUE INDEX "DecodedLogs_txHash_key" ON "DecodedLogs"("txHash");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "ContractVerification_contractAddress_key" ON "ContractVerification"("contractAddress");
+
+-- AddForeignKey
+ALTER TABLE "Contracts" ADD CONSTRAINT "Contracts_address_fkey" FOREIGN KEY ("address") REFERENCES "ContractVerification"("contractAddress") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Tokens" ADD CONSTRAINT "Tokens_contractAddress_fkey" FOREIGN KEY ("contractAddress") REFERENCES "Contracts"("address") ON DELETE RESTRICT ON UPDATE CASCADE;
