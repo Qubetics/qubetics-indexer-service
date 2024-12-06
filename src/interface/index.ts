@@ -10,7 +10,7 @@ export interface IBlock {
 	blockhash: string;
 	parentHash: string;
 	stateRoot: string;
-	timestamp: number;
+	timestamp: Date;
 	transactionCount: number;
 	miner: string;
 	transactionsRoot: string;
@@ -40,7 +40,7 @@ export interface ITransaction {
 	gasPrice: number;
 	toAddress: string;
 	blockhash: string;
-	timestamp: number;
+	timestamp: Date;
 	fromAddress: string;
 	blocknumber: number;
 	type: TRANSACTION_TYPE;
@@ -56,7 +56,7 @@ export interface ICOINTX {
 	gasPrice: number;
 	toAddress: string;
 	blockhash: string;
-	timestamp: number;
+	timestamp: Date;
 	fromAddress: string;
 	blocknumber: number;
 	status: TRANSACTION_STATUS;
@@ -73,7 +73,7 @@ export interface ITransactionPayload {
 	fromAddress: string;
 	toAddress: string;
 	contractAddress: string;
-	timestamp: number;
+	timestamp: Date;
 	value: string;
 	txFee: string;
 	token?: string;
@@ -184,7 +184,7 @@ export interface IContracts {
 	contractType: string;
 	creator: string;
 	address: string;
-	timestamp: number;
+	timestamp: Date;
 	bytecode: string;
 	bytecodeHash: string;
 }
@@ -212,7 +212,7 @@ export interface IContractLogs {
 	method: string;
 	gasFee: number;
 	status: string;
-	timestamp: number;
+	timestamp: Date;
 }
 
 export interface IHolders {

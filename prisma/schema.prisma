@@ -34,7 +34,7 @@ model Blocks {
   stateRoot        String   @db.VarChar(255)
   parentHash       String   @db.VarChar(255)
   transactionsRoot String
-  timestamp        BigInt
+  timestamp        DateTime
   transactionCount BigInt   @default(0)
   nonce            BigInt
   miner            String   @db.VarChar(255)
@@ -61,7 +61,7 @@ model Transactions {
   contractAddress String            @default("N/A")
   status          TransactionStatus @default(PENDING)
   type            TransactionType
-  timestamp       BigInt
+  timestamp       DateTime
   fromAddress     String            @db.VarChar(255)
   toAddress       String            @db.VarChar(255)
   gasPrice        BigInt            @default(0)
@@ -84,7 +84,7 @@ model CoinTransaferTx {
   status      TransactionStatus @default(PENDING)
   fromAddress String            @db.VarChar(255)
   toAddress   String            @db.VarChar(255)
-  timestamp   BigInt
+  timestamp   DateTime
   gasPrice    BigInt            @default(0)
   gas         BigInt            @default(0)
   value       String            @default("0")
@@ -103,7 +103,7 @@ model Contracts {
   bytecode     String         @default("") @db.VarChar(65535)
   bytecodeHash String         @default("") @db.VarChar(255)
   txHash       String
-  timestamp    BigInt
+  timestamp    DateTime
   contractName String
   contractType String         @default("UNKNOWN")
   createdAt    DateTime       @default(now())
@@ -152,7 +152,7 @@ model ContractLogs {
   method          String   @default("N/A")
   gasFee          BigInt
   status          String
-  timestamp       BigInt
+  timestamp       DateTime
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 

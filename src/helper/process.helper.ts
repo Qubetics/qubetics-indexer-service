@@ -118,9 +118,11 @@ class ProcessHelper {
 				transactionCount: transactions?.length,
 				transactionsRoot: block?.transactionsRoot,
 				baseFeePerGas: Number(block?.baseFeePerGas),
-				timestamp: Number(block?.timestamp) * CONST_NAME.THOUSAND,
+				// timestamp: Number(block?.timestamp) * CONST_NAME.THOUSAND,
+				timestamp: new Date(Number(block?.timestamp) * 1000),
 			};
 
+			console.log('blockExtractedData', blockExtractedData);
 			// send stats update (transaction)
 			if (transactions.length)
 				rabbitmqService.enqueueData(
@@ -188,9 +190,7 @@ class ProcessHelper {
 					input: transactions[i].input,
 					txhash: transactions[i]?.hash,
 					contractAddress: CONST_NAME.NA,
-					timestamp: block?.timestamp
-						? Number(block?.timestamp) * CONST_NAME.THOUSAND
-						: new Date().getTime(),
+					timestamp: new Date(Number(block?.timestamp) * 1000),
 					blocknumber: Number(block.number),
 					token: CONST_NAME.ZERO.toString(),
 					fromAddress: transactions[i]?.from,
