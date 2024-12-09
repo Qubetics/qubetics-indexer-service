@@ -122,7 +122,7 @@ class ProcessHelper {
 				timestamp: new Date(Number(block?.timestamp) * 1000),
 			};
 
-			console.log('blockExtractedData', blockExtractedData);
+			// console.log('blockExtractedData', blockExtractedData);
 			// send stats update (transaction)
 			if (transactions.length)
 				rabbitmqService.enqueueData(
@@ -226,7 +226,7 @@ class ProcessHelper {
 					);
 				}
 				transactionsArr.push(txExtractedData);
-
+				console.log(txExtractedData, 'txExtractedData');
 				if (txQueue)
 					RabbitMqService.enqueueData(
 						txQueue,
@@ -315,12 +315,14 @@ class ProcessHelper {
 			}
 			switch (tx.type) {
 				case TRANSACTION_TYPE.CONTRACT_CREATION:
+					console.log('CONTRACT_CREATION CASE: ');
 					/* Contract Craetion Transaction Saving Code space */
 					await this.handleContractCreation(tx);
 					break;
 
 				case TRANSACTION_TYPE.CONTRACT_TRANSFER:
 					/* Contract Transfer or execution Transaction Saving Code space */
+					console.log('CONTRACT_TRANSFER CASE: ');
 					await this.handleContractExecution(tx);
 					RabbitMqService.enqueueData(
 						'DECODE_NEW_TRANSACTION',
@@ -329,6 +331,7 @@ class ProcessHelper {
 					break;
 
 				case TRANSACTION_TYPE.COIN_TRANSFER:
+					console.log('COIN_TRANSFER CASE: ');
 					/* Coin Transfer Transaction Count Saving Code space */
 					await this.handleCoinTransfer(tx);
 					break;
@@ -423,7 +426,7 @@ class ProcessHelper {
 				blockNumber: Number(tx?.blocknumber),
 				bytecodeHash: hashString(bytecode),
 			};
-			// console.log('contractDetails++++++++++++++++++', contractDetails);
+			console.log('contractDetails++++++++++++++++++', contractDetails);
 
 			const contractSaveRes = await explorerHelper.saveContractDeployTx(
 				contractDetails,
@@ -548,8 +551,10 @@ class ProcessHelper {
 
 					console.log('address++++++++++++++++', tx.toAddress);
 
-					const updateExecutionC =
+					if (await explorerHelper.ifContractExist(tx.toAddress)) {
 						await explorerHelper.updateContractExec(tx.toAddress);
+					}
+
 					const fromRes = await explorerHelper.upsertHolder({
 						address: tx.fromAddress,
 						contractAddress: tx.toAddress,
