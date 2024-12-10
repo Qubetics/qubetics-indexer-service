@@ -312,6 +312,18 @@ class ProcessHelper {
 						txCount,
 					);
 				}
+				rabbitmqService.enqueueData(
+					QUEUE_NAME.STATS_UPDATE,
+					JSON.stringify({
+						type: REDIS_KEY.TxFeeHistory,
+						date: new Date(tx.timestamp).getTime()
+							? new Date(tx.timestamp).getTime()
+							: Date.now(),
+						txnCount: Number(
+							(Number(tx.gas) * Number(tx.gasPrice)) / 1e18,
+						),
+					}),
+				);
 			}
 			switch (tx.type) {
 				case TRANSACTION_TYPE.CONTRACT_CREATION:

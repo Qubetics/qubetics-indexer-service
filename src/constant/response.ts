@@ -110,6 +110,7 @@ export const REDIS_KEY = {
 	CoinTransferTxHistory: 'CoinTransferTxHistory',
 	ContractDeploymentHistory: 'ContractDeploymentHistory',
 	StatsGenerated: 'StatsGenerated',
+	TxFeeHistory: 'TxFeeHistory',
 
 	// counts
 	BLOCKS_COUNT: 'BLOCKS_COUNT',

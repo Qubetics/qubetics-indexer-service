@@ -469,6 +469,94 @@ class Stats {
 			return { key: null };
 		}
 	};
+
+	computeTxFeeSum = async (onlyMinInterval: boolean = false) => {
+		try {
+			let graphData;
+			let startDate = '';
+
+			const currentDate = new Date();
+
+			const oneDayAgo = new Date();
+			oneDayAgo.setDate(oneDayAgo.getDate() - 1); // Subtract 1 day
+			startDate = formatDate(oneDayAgo);
+
+			graphData = (await prisma.$queryRaw`
+				 SELECT DATE_TRUNC('hour', "timestamp") AS "hour", SUM((CAST("gasPrice" AS numeric) * CAST("gas" AS numeric))/1e18)::Float AS "count"
+					FROM "Transactions"
+					WHERE "timestamp" >= ${new Date(startDate)}
+					AND "timestamp" <= ${currentDate}
+					
+					GROUP BY "hour"
+					ORDER BY "hour";
+				`) as Array<{ hour: Date; count: number }>;
+			const hourly = await fillMissingDatesWithZeroByhr(
+				graphData,
+				new Date(startDate),
+			);
+
+			const daysAgo = 31;
+			const fromDate = new Date(currentDate);
+			fromDate.setDate(fromDate.getDate() - daysAgo);
+			startDate = formatDateForDay(fromDate);
+
+			graphData = (await prisma.$queryRaw`
+				   SELECT DATE_TRUNC('day', "timestamp") AS "day", SUM((CAST("gasPrice" AS numeric) * CAST("gas" AS numeric))/1e18)::Float AS "count"
+				   FROM "Transactions"
+				   WHERE "timestamp" >= ${new Date(startDate)}
+					AND "timestamp" <= ${currentDate}
+				
+				   GROUP BY "day"
+				   ORDER BY "day";
+				`) as Array<{ day: Date; count: number }>;
+
+			const daily = await fillMissingDatesWithZeroByDay(
+				graphData,
+				new Date(startDate),
+				currentDate,
+			);
+
+			const oneYearAgo = new Date();
+			oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 5); // Subtract 1 year
+			startDate = formatDateForYear(oneYearAgo);
+
+			graphData = (await prisma.$queryRaw`
+					SELECT DATE_TRUNC('month', "timestamp") AS  "month", SUM((CAST("gasPrice" AS numeric) * CAST("gas" AS numeric))/1e18)::Float AS "count"
+						FROM "Transactions"
+						WHERE "timestamp" >= ${oneYearAgo}
+						AND "timestamp" <= ${currentDate}
+						GROUP BY "month"
+						ORDER BY "month";
+				`) as Array<{ month: Date; count: number }>;
+
+			const monthly = await fillMissingDatesWithZeroByMonth(
+				graphData,
+				new Date(startDate),
+				currentDate,
+			);
+
+			return {
+				key: REDIS_KEY.TxFeeHistory,
+				data: { hourly, daily, monthly },
+				statsCurrents: {
+					hourly: hourly[hourly.length - 1],
+					daily: daily[daily.length - 1],
+					monthly: monthly[monthly.length - 1],
+				},
+			};
+			// return {
+			// 	error: false,
+			// 	message: RES_MSG.TRANSACTION_HISTORY_SUCCESS,
+			// 	data: {
+			// 		finalData: finalData as Array<GraphData>,
+			// 		count: await prisma.contracts.count(),
+			// 	},
+			// };
+		} catch (err) {
+			console.log('Error while hitting query for txFee sum::>> ', err);
+			return { key: null };
+		}
+	};
 }
 
 /**
@@ -575,6 +663,9 @@ export class StatsUpdater {
 					await redisHelper.getString(
 						REDIS_KEY.ContractDeploymentHistory,
 					),
+				[REDIS_KEY.TxFeeHistory]: await redisHelper.getString(
+					REDIS_KEY.TxFeeHistory,
+				),
 			};
 
 			// assign the current time stats records
@@ -662,6 +753,7 @@ export class StatsUpdater {
 			this.stats.computeNewAccountHistory(),
 			this.stats.computeCoinTransferHistory(),
 			this.stats.computeContractDeployHistory(),
+			this.stats.computeTxFeeSum(),
 		]);
 
 		// if key is not null save the computed stats data
