@@ -722,7 +722,7 @@ class ExlorerHelper {
 
 	ifContractExist = async (contractAddress: string) => {
 		try {
-			//abi source code and methods
+			// abi source code and methods
 
 			const res = await prisma.contracts.findFirst({
 				where: {
