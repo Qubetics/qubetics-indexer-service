@@ -294,7 +294,7 @@ export async function fetchRequest(
 	});
 }
 
-export async function fillMissingDatesWithZeroByMonth(
+export async function fillMissingDatesWithZeroByMonthV1(
 	data: Array<{ month: Date; count: number }>,
 	startDate: Date,
 	currentDateVal: Date,
@@ -337,4 +337,50 @@ export function formatDateForYear(date: Date): string {
 // Function to hash a string
 export function hashString(str: string, algorithm: string = 'sha256') {
 	return crypto.createHash(algorithm).update(str).digest('hex');
+}
+
+export async function fillMissingDatesWithZeroByMonth(
+	records: Array<{ month: Date; count: number }>,
+	startDate: Date,
+	endDate: Date,
+) {
+	const filledRecords = [];
+	startDate.setMonth(startDate.getMonth() + 1);
+	const currentDate = new Date(startDate);
+
+	// Set time to start of the day to avoid time component discrepancies
+	currentDate.setHours(0, 0, 0, 0);
+
+	// Convert endDate to the end of the month
+	const endOfMonth = new Date(endDate);
+	endOfMonth.setDate(1);
+	endOfMonth.setMonth(endOfMonth.getMonth() + 1);
+	endOfMonth.setDate(0);
+
+	let currentIndex = 0;
+	let currentRecord = records[currentIndex];
+
+	while (currentDate <= endOfMonth) {
+		if (
+			currentRecord &&
+			currentRecord.month.getFullYear() === currentDate.getFullYear() &&
+			currentRecord.month.getMonth() === currentDate.getMonth()
+		) {
+			const resExist = {
+				created_at: currentRecord.month,
+				count: currentRecord.count,
+			};
+			filledRecords.push(resExist);
+			currentIndex++;
+			currentRecord = records[currentIndex];
+		} else {
+			const cDate = new Date(currentDate);
+			filledRecords.push({ created_at: cDate, count: 0 });
+		}
+
+		// Move to the next month
+		currentDate.setMonth(currentDate.getMonth() + 1);
+	}
+
+	return filledRecords;
 }
