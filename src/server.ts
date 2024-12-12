@@ -63,7 +63,7 @@ app.init()
 	})
 	.catch((err: Error) => {
 		logger.info('Error while app initlization\n');
-		logger.error(err);
+		console.log('The error is here ', err);
 	});
 
 function connectSocket(serverInstance: http.Server): void {
