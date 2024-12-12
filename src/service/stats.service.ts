@@ -618,7 +618,7 @@ export class StatsUpdater {
 
 	// start the stats calculation and updation service
 	start = async () => {
-		await this.computeStats();
+		this.computeStats();
 	};
 
 	// stop cron schedule by cron id or key

@@ -43,6 +43,7 @@ class Environment implements IEnvironment {
 	public wsUrl: string;
 
 	public address_prefix: string;
+	public wsSync: boolean;
 
 	/**
 	 *
@@ -69,6 +70,7 @@ class Environment implements IEnvironment {
 		this.address_prefix = <string>process.env.ADDRESS_PREFIX;
 		this.symbol = <string>process.env.TOKEN_SYMBOL;
 		this.currency = <string>process.env.TOKEN_CURRENCY;
+		this.wsSync = process.env.WS_SYNC !== 'false';
 	}
 
 	/**

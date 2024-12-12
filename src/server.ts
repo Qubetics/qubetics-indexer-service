@@ -41,18 +41,6 @@ function serverListening(): void {
 
 app.init()
 	.then(async () => {
-		const instance = Web3SocketHelper.getInstance();
-		await instance.initializeWsConnection();
-		await countHelper.initializeCount();
-		await new StatsUpdater().start();
-		processHelper.ProcessDowntimeBlock();
-		processHelper.subscribeBlocksWs();
-		CronService.saveTokenPrice();
-		CronService.checkValidators();
-		CronService.updateGraph();
-		CronService.checkPendingTransaction();
-		// processHelper.ProcessMissedBlockAndTxn();
-
 		app.express.set('port', env.port);
 		server = app.httpServer;
 		server.on('error', serverError);
@@ -60,6 +48,24 @@ app.init()
 
 		server.listen(env.port);
 		connectSocket(server);
+
+		const instance = Web3SocketHelper.getInstance();
+		await instance.initializeWsConnection();
+		await countHelper.initializeCount();
+		new StatsUpdater().start();
+		processHelper.subscribeBlocksWs();
+		processHelper.ProcessDowntimeBlock();
+		CronService.saveTokenPrice();
+		CronService.checkValidators();
+		CronService.updateGraph();
+		CronService.checkPendingTransaction();
+		// processHelper.ProcessMissedBlockAndTxn();
+
+		// if (environment.wsSync) {
+		// 	await processHelper.subscribeBlocksWs();
+		// } else {
+		// 	CronService.syncBlocks();
+		// }
 	})
 	.catch((err: Error) => {
 		logger.info('Error while app initlization\n');

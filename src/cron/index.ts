@@ -1,10 +1,12 @@
 import axios, { AxiosInstance } from 'axios';
 import * as cron from 'cron';
-import { CONST_NAME, REDIS_KEY } from '../constant/response';
+import { CONST_NAME, QUEUE_NAME, REDIS_KEY } from '../constant/response';
 import ExlorerHelper from '../helper/explorer.helper';
 
 import socketHelper from '../helper/socket.helper';
 import { calculateData, getValidatorsInfo } from '../helper/validator.helper';
+import web3Helper from '../helper/web3.helper';
+import { RabbitMqService, RedisService } from '../service';
 
 const { CronJob } = cron;
 const apiUrl = environment.evmHost;
@@ -76,6 +78,83 @@ class CronService {
 			true,
 			'America/Los_Angeles',
 		);
+	}
+
+	public syncBlocks() {
+		let processing = false;
+		new CronJob(
+			'*/1 * * * * *', // will run every 1  seconds.
+			async () => {
+				if (!processing) {
+					processing = true;
+					await this.processBlock();
+					processing = false;
+				}
+			},
+			null,
+			true,
+			'America/Los_Angeles',
+		);
+	}
+
+	async processBlock() {
+		try {
+			const latestBlock = await web3Helper.getBlockNumber();
+			const lastBlock = BigInt(latestBlock).toString();
+
+			const updateBlock = await RedisService.getString(
+				CONST_NAME.LATEST_BLOCK,
+			);
+
+			if (!updateBlock) {
+				await RedisService.setString(
+					CONST_NAME.LATEST_BLOCK,
+					+lastBlock,
+				);
+			}
+
+			if (updateBlock !== null) {
+				if (+updateBlock < +lastBlock) {
+					const latestBlockNo = Number(updateBlock);
+
+					RabbitMqService.enqueueData(
+						QUEUE_NAME.BLOCKS,
+						latestBlockNo.toString(),
+					);
+
+					const diff = +lastBlock - +updateBlock;
+
+					let nextBlock = +updateBlock + 1;
+					if (diff > 4) {
+						nextBlock = +lastBlock - 1;
+
+						for (
+							let i = Number(updateBlock);
+							i <= Number(lastBlock);
+							i += 1
+						) {
+							const blockQueue = `${QUEUE_NAME.DOWNTIME_BLOCK}_${i
+								.toString()
+								.slice(-1)}`;
+							// saving missed block to downtime block Queue
+							RabbitMqService.enqueueData(
+								blockQueue,
+								i.toString(),
+							);
+						}
+					}
+					await RedisService.setString(
+						CONST_NAME.LATEST_BLOCK,
+						nextBlock,
+					);
+				}
+			}
+
+			return true;
+		} catch (err) {
+			console.log('Error while saving blocks processBlock In CRON', err);
+			return false;
+		}
 	}
 }
 
