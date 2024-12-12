@@ -43,6 +43,7 @@ class Environment implements IEnvironment {
 	public wsUrl: string;
 
 	public address_prefix: string;
+
 	public wsSync: boolean;
 
 	/**
