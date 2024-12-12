@@ -94,7 +94,7 @@ class ProcessHelper {
 				blockno,
 				true,
 			);
-
+			console.log('blockFROM', block);
 			const transactions = block?.transactions || [];
 
 			// const {block, transactions } = await this.getBlockDetails(blockno);

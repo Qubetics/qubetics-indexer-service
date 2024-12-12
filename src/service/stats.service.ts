@@ -772,6 +772,11 @@ export class StatsUpdater {
 	// Queue helper for processing latest stats updation
 	updateInMemoryStats = (txDetails: StatsType) => {
 		try {
+			console.log('txDetails IN updateInMemoryStats', txDetails);
+			if (Object.keys(this.statsCurrents).length === 0) {
+				return false;
+			}
+
 			const _currentRecords = this.statsCurrents[txDetails.type].current;
 
 			Object.keys(_currentRecords).forEach((recordKey) => {
@@ -781,15 +786,17 @@ export class StatsUpdater {
 					timeStampRange: { start, end },
 				} = _currentRecords[recordKey];
 				if (txDetails.date >= start && txDetails.date <= end)
-					data.count += txDetails?.txnCount ? txDetails.txnCount : 1;
+					data.count =
+						Number(data.count) +
+						(txDetails?.txnCount ? txDetails.txnCount : 1);
+
 				// debug logs
 				// appendFile(path.join(__dirname, 'date.txt'),`${JSON.stringify({ date: new Date(txDetails.date).toLocaleString(), end: new Date(end).toLocaleString(), flag: txDetails.date <= end })}-${recordKey}\n`);
 			});
-
-			return false;
+			return true;
 		} catch (err) {
 			logger.error('Error while updating the stats: ', err);
-			return true;
+			return false;
 		}
 	};
 
