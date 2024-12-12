@@ -474,8 +474,32 @@ class Stats {
 		try {
 			let graphData;
 			let startDate = '';
-
 			const currentDate = new Date();
+
+			/////////////////
+			const currentDateModi = formatDateByMin(new Date());
+			const oneHourAgo = new Date();
+			oneHourAgo.setHours(oneHourAgo.getHours() - 1);
+			startDate = formatDateByMin(oneHourAgo);
+
+			graphData = (await prisma.$queryRaw`
+				 SELECT DATE_TRUNC('minute', "timestamp") AS "hour", SUM((CAST("gasPrice" AS numeric) * CAST("gas" AS numeric))/1e18)::Float AS "count"
+					FROM "Transactions"
+					WHERE "timestamp" >= ${new Date(startDate)}
+					AND "timestamp" <= ${currentDate}
+					GROUP BY "hour"
+					ORDER BY "hour";
+				`) as Array<{ hour: Date; count: number }>;
+
+			const mintue = await fillMissingMinutes(
+				graphData,
+				new Date(startDate),
+				new Date(currentDateModi),
+			);
+
+			if (onlyMinInterval) return { mintue };
+
+			//////
 
 			const oneDayAgo = new Date();
 			oneDayAgo.setDate(oneDayAgo.getDate() - 1); // Subtract 1 day
@@ -535,10 +559,20 @@ class Stats {
 				currentDate,
 			);
 
+			// return {
+			// 	key: REDIS_KEY.TxFeeHistory,
+			// 	data: { hourly, daily, monthly },
+			// 	statsCurrents: {
+			// 		hourly: hourly[hourly.length - 1],
+			// 		daily: daily[daily.length - 1],
+			// 		monthly: monthly[monthly.length - 1],
+			// 	},
+			// };
 			return {
 				key: REDIS_KEY.TxFeeHistory,
-				data: { hourly, daily, monthly },
+				data: { mintue, daily, hourly, monthly },
 				statsCurrents: {
+					mintue: mintue[mintue.length - 1],
 					hourly: hourly[hourly.length - 1],
 					daily: daily[daily.length - 1],
 					monthly: monthly[monthly.length - 1],
