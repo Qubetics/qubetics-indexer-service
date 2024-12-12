@@ -476,7 +476,7 @@ class Stats {
 			let startDate = '';
 			const currentDate = new Date();
 
-			/////////////////
+			/// //////////////
 			const currentDateModi = formatDateByMin(new Date());
 			const oneHourAgo = new Date();
 			oneHourAgo.setHours(oneHourAgo.getHours() - 1);
@@ -499,7 +499,7 @@ class Stats {
 
 			if (onlyMinInterval) return { mintue };
 
-			//////
+			/// ///
 
 			const oneDayAgo = new Date();
 			oneDayAgo.setDate(oneDayAgo.getDate() - 1); // Subtract 1 day
