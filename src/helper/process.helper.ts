@@ -287,6 +287,20 @@ class ProcessHelper {
 		try {
 			const transactions = { ...tx };
 			console.log('Transaction: ', transactions?.blockhash);
+			rabbitmqService.enqueueData(
+				QUEUE_NAME.STATS_UPDATE,
+				JSON.stringify({
+					type: REDIS_KEY.TxFeeHistory,
+					date: new Date(transactions.timestamp).getTime()
+						? new Date(transactions.timestamp).getTime()
+						: Date.now(),
+					txnCount: Number(
+						(Number(transactions.gas) *
+							Number(transactions.gasPrice)) /
+							1e18,
+					),
+				}),
+			);
 
 			delete transactions.logs;
 			const txData = await explorerHelper.saveTransactions(
@@ -312,18 +326,6 @@ class ProcessHelper {
 						txCount,
 					);
 				}
-				rabbitmqService.enqueueData(
-					QUEUE_NAME.STATS_UPDATE,
-					JSON.stringify({
-						type: REDIS_KEY.TxFeeHistory,
-						date: new Date(tx.timestamp).getTime()
-							? new Date(tx.timestamp).getTime()
-							: Date.now(),
-						txnCount: Number(
-							(Number(tx.gas) * Number(tx.gasPrice)) / 1e18,
-						),
-					}),
-				);
 			}
 			switch (tx.type) {
 				case TRANSACTION_TYPE.CONTRACT_CREATION:
