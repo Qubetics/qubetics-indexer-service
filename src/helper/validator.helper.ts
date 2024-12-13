@@ -202,7 +202,7 @@ async function getValidatorsInfo(
 			const data = bech32.fromWords(decodeAddress.words); // Convert 5-bit words to binary
 			console.log(
 				'decodeVALIDE',
-				'0x' + Buffer.from(data).toString('hex'),
+				`0x${Buffer.from(data).toString('hex')}`,
 			); // Convert binary to hex
 
 			validatorAddresses.push(address);
