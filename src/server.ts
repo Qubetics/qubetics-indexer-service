@@ -59,6 +59,7 @@ app.init()
 		CronService.checkValidators();
 		CronService.updateGraph();
 		CronService.checkPendingTransaction();
+
 		// processHelper.ProcessMissedBlockAndTxn();
 
 		// if (environment.wsSync) {

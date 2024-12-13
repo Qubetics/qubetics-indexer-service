@@ -49,7 +49,7 @@ class CronService {
 	public async checkValidators() {
 		async function fetchData() {
 			await getValidatorsInfo(apiRes);
-			await calculateData();
+			// await calculateData();
 			setTimeout(fetchData, 1 * 60 * 1000);
 		}
 
