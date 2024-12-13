@@ -57,7 +57,7 @@ jobs:
 
       - name: Build Docker image
         run: |
-          docker build -t ${HUAWEI_SWR_ENDPOINT}/${HUAWEI_ORGANIZATION}/${HUAWEI_IMAGE}:${{ github.sha }} .
+          docker build -t ${HUAWEI_SWR_ENDPOINT}/${HUAWEI_ORGANIZATION}/${HUAWEI_IMAGE}:${{ github.sha }} . --no-cache
           
       - name: Docker login & Push Docker image to Huawei SWR
         run: |
