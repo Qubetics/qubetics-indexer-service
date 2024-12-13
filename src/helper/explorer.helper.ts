@@ -654,6 +654,7 @@ class ExlorerHelper {
 		validatorData: IValidator,
 	): Promise<IESResponse> => {
 		try {
+			console.log('validatorData', validatorData);
 			const existingValidator = await prisma.validator.findUnique({
 				where: { address: validatorData.address },
 			});
@@ -665,9 +666,9 @@ class ExlorerHelper {
 					data: validatorData,
 				});
 			} else {
-				// console.log(
-				// 	'create++++++++++++++++++++++++++++++===============================',
-				// );
+				console.log(
+					'create++++++++++++++++++++++++++++++===============================',
+				);
 				// Create a new validator
 				await prisma.validator.create({
 					data: validatorData,
@@ -681,9 +682,9 @@ class ExlorerHelper {
 					: RES_MSG.VALIDATOR_ADDED,
 			};
 		} catch (err: any) {
-			logger.error(
+			console.log(
 				`Error while saving validator data for address: ${validatorData.address}`,
-				err.message,
+				err,
 			);
 			return {
 				error: true,

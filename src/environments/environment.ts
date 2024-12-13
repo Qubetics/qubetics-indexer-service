@@ -45,6 +45,7 @@ class Environment implements IEnvironment {
 	public address_prefix: string;
 
 	public wsSync: boolean;
+	public projectName: string;
 
 	/**
 	 *
@@ -72,6 +73,7 @@ class Environment implements IEnvironment {
 		this.symbol = <string>process.env.TOKEN_SYMBOL;
 		this.currency = <string>process.env.TOKEN_CURRENCY;
 		this.wsSync = process.env.WS_SYNC !== 'false';
+		this.projectName = <string>process.env.PROJECT_NAME || 'qubetics';
 	}
 
 	/**
