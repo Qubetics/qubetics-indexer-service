@@ -220,8 +220,13 @@ class Stats {
 			return {
 				key: REDIS_KEY.NewAccountHistory,
 				data: { hourly, mintue, daily, monthly },
+				// statsCurrents: {
+				// 	mintue: mintue[mintue.length - 1],
+				// 	hourly: hourly[hourly.length - 1],
+				// 	daily: daily[daily.length - 1],
+				// 	monthly: monthly[monthly.length - 1],
+				// },
 				statsCurrents: {
-					mintue: mintue[mintue.length - 1],
 					hourly: hourly[hourly.length - 1],
 					daily: daily[daily.length - 1],
 					monthly: monthly[monthly.length - 1],

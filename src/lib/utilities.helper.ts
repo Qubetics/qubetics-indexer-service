@@ -367,7 +367,7 @@ export async function fillMissingDatesWithZeroByMonth(
 			currentRecord.month.getMonth() === currentDate.getMonth()
 		) {
 			const resExist = {
-				created_at: currentRecord.month,
+				createdAt: currentRecord.month,
 				count: currentRecord.count,
 			};
 			filledRecords.push(resExist);
@@ -375,7 +375,7 @@ export async function fillMissingDatesWithZeroByMonth(
 			currentRecord = records[currentIndex];
 		} else {
 			const cDate = new Date(currentDate);
-			filledRecords.push({ created_at: cDate, count: 0 });
+			filledRecords.push({ createdAt: cDate, count: 0 });
 		}
 
 		// Move to the next month
