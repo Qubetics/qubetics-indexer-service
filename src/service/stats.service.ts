@@ -481,14 +481,13 @@ class Stats {
 			let startDate = '';
 			const currentDate = new Date();
 
-			/// //////////////
 			const currentDateModi = formatDateByMin(new Date());
 			const oneHourAgo = new Date();
 			oneHourAgo.setHours(oneHourAgo.getHours() - 1);
 			startDate = formatDateByMin(oneHourAgo);
 
 			graphData = (await prisma.$queryRaw`
-				 SELECT DATE_TRUNC('minute', "timestamp") AS "hour", SUM((CAST("gasPrice" AS numeric) * CAST("gas" AS numeric))/1e18)::Float AS "count"
+				 SELECT DATE_TRUNC('minute', "timestamp") AS "hour", SUM((CAST("gasPrice" AS numeric) * CAST("gas" AS numeric))/1e18) AS "count"
 					FROM "Transactions"
 					WHERE "timestamp" >= ${new Date(startDate)}
 					AND "timestamp" <= ${currentDate}
@@ -504,14 +503,12 @@ class Stats {
 
 			if (onlyMinInterval) return { mintue };
 
-			/// ///
-
 			const oneDayAgo = new Date();
 			oneDayAgo.setDate(oneDayAgo.getDate() - 1); // Subtract 1 day
 			startDate = formatDate(oneDayAgo);
 
 			graphData = (await prisma.$queryRaw`
-				 SELECT DATE_TRUNC('hour', "timestamp") AS "hour", SUM((CAST("gasPrice" AS numeric) * CAST("gas" AS numeric))/1e18)::Float AS "count"
+				 SELECT DATE_TRUNC('hour', "timestamp") AS "hour", ROUND(SUM((CAST("gasPrice" AS numeric) * CAST("gas" AS numeric))/1e18) AS "count")
 					FROM "Transactions"
 					WHERE "timestamp" >= ${new Date(startDate)}
 					AND "timestamp" <= ${currentDate}
@@ -530,7 +527,7 @@ class Stats {
 			startDate = formatDateForDay(fromDate);
 
 			graphData = (await prisma.$queryRaw`
-				   SELECT DATE_TRUNC('day', "timestamp") AS "day", SUM((CAST("gasPrice" AS numeric) * CAST("gas" AS numeric))/1e18)::Float AS "count"
+				   SELECT DATE_TRUNC('day', "timestamp") AS "day", ROUND(SUM((CAST("gasPrice" AS numeric) * CAST("gas" AS numeric))/1e18) AS "count")
 				   FROM "Transactions"
 				   WHERE "timestamp" >= ${new Date(startDate)}
 					AND "timestamp" <= ${currentDate}
@@ -550,7 +547,7 @@ class Stats {
 			startDate = formatDateForYear(oneYearAgo);
 
 			graphData = (await prisma.$queryRaw`
-					SELECT DATE_TRUNC('month', "timestamp") AS  "month", SUM((CAST("gasPrice" AS numeric) * CAST("gas" AS numeric))/1e18)::Float AS "count"
+					SELECT DATE_TRUNC('month', "timestamp") AS  "month", ROUND(SUM((CAST("gasPrice" AS numeric) * CAST("gas" AS numeric))/1e18) AS "count")
 						FROM "Transactions"
 						WHERE "timestamp" >= ${oneYearAgo}
 						AND "timestamp" <= ${currentDate}
