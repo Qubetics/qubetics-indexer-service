@@ -20,7 +20,8 @@ class CronService {
 				'Content-Type': 'application/json; charset=utf-8',
 				Accept: 'application/json',
 			},
-			timeout: CONST_NAME.THOUSAND,
+			// timeout: CONST_NAME.THOUSAND,
+			timeout: 5000,
 		});
 		console.log('apiResInfo', apiRes);
 	}
@@ -50,7 +51,7 @@ class CronService {
 	public async checkValidators() {
 		async function fetchData() {
 			await getValidatorsInfo(apiRes);
-			// await calculateData();
+			await calculateData();
 			setTimeout(fetchData, 1 * 60 * 1000);
 		}
 

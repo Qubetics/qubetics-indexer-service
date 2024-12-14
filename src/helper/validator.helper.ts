@@ -121,7 +121,8 @@ const calculateData = async (): Promise<
 				'Content-Type': 'application/json; charset=utf-8',
 				Accept: 'application/json',
 			},
-			timeout: CONST_NAME.THOUSAND,
+			// timeout: CONST_NAME.THOUSAND,
+			timeout: 5000,
 		});
 
 		const params = await getParams(apiRes);
