@@ -328,6 +328,7 @@ class RabbitMq {
 				const message: StatsType = JSON.parse(
 					msg.content.toString('utf-8'),
 				);
+				console.log('STATS_UPDATE', message);
 				// update the latest count for data tables
 				countHelper.updateLatestCount(message);
 

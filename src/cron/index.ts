@@ -23,7 +23,6 @@ class CronService {
 			// timeout: CONST_NAME.THOUSAND,
 			timeout: 5000,
 		});
-		console.log('apiResInfo', apiRes);
 	}
 
 	public checkPendingTransaction() {

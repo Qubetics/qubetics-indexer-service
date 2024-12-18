@@ -791,13 +791,17 @@ export class StatsUpdater {
 			this.stats.computeContractDeployHistory(),
 			this.stats.computeTxFeeSum(),
 		]);
-
+		console.log('vstatsDataList', statsDataList);
 		// if key is not null save the computed stats data
 		statsDataList.forEach((statsData: any) => {
 			this.statsState[statsData.key] = statsData.data;
-			this.statsCurrents[statsData.key] = {
-				current: generateTimeRangesFromObj(statsData.statsCurrents),
-			};
+			console.log('statsData.key', statsData.key);
+			console.log(statsData.statsCurrents, 'statsData.statsCurrents');
+			if (statsData.key) {
+				this.statsCurrents[statsData.key] = {
+					current: generateTimeRangesFromObj(statsData.statsCurrents),
+				};
+			}
 		});
 
 		await this._updateInRedis();
