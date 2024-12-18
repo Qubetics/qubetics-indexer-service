@@ -49,10 +49,10 @@ class Stats {
 			oneDayAgo.setDate(oneDayAgo.getDate() - 1);
 			startDate = formatDate(oneDayAgo);
 			graphData = (await prisma.$queryRaw`
-				SELECT DATE_TRUNC('hour', "createdAt") AS "hour", COUNT(*)::int AS "count"
+				SELECT DATE_TRUNC('hour', "timestamp") AS "hour", COUNT(*)::int AS "count"
 				FROM "Transactions"
-				WHERE "createdAt" >= ${new Date(startDate)}
-				AND "createdAt" <= ${currentDate}
+				WHERE "timestamp" >= ${new Date(startDate)}
+				AND "timestamp" <= ${currentDate}
 		
 				GROUP BY "hour"
 				ORDER BY "hour";
@@ -69,10 +69,10 @@ class Stats {
 			startDate = formatDateForDay(fromDate);
 
 			graphData = (await prisma.$queryRaw`
-			  SELECT DATE_TRUNC('day', "createdAt") AS "day", COUNT(*)::int AS "count"
+			  SELECT DATE_TRUNC('day', "timestamp") AS "day", COUNT(*)::int AS "count"
 			  FROM "Transactions"
-			  WHERE "createdAt" >= ${new Date(startDate)}
-				AND "createdAt" <= ${currentDate}
+			  WHERE "timestamp" >= ${new Date(startDate)}
+				AND "timestamp" <= ${currentDate}
 				
 			  GROUP BY "day"
 			  ORDER BY "day";
@@ -89,10 +89,10 @@ class Stats {
 			startDate = formatDateForYear(oneYearAgo);
 
 			graphData = (await prisma.$queryRaw`
-					SELECT DATE_TRUNC('month', "createdAt") AS "month", COUNT(*)::int AS "count"
+					SELECT DATE_TRUNC('month', "timestamp") AS "month", COUNT(*)::int AS "count"
 					FROM "Transactions"
-					WHERE "createdAt" >= ${new Date(startDate)}
-					AND "createdAt" <= ${currentDate}
+					WHERE "timestamp" >= ${new Date(startDate)}
+					AND "timestamp" <= ${currentDate}
 					GROUP BY "month"
 					ORDER BY "month";
 				`) as Array<{ month: Date; count: number }>;
@@ -261,10 +261,10 @@ class Stats {
 			oneHourAgo.setHours(oneHourAgo.getHours() - 1);
 			startDate = formatDateByMin(oneHourAgo);
 			graphData = (await prisma.$queryRaw`
-			   SELECT DATE_TRUNC('minute', "createdAt") AS "hour", COUNT(*)::int AS "count"
+			   SELECT DATE_TRUNC('minute', "timestamp") AS "hour", COUNT(*)::int AS "count"
 			   FROM "Transactions"
-			   WHERE "createdAt" >= ${new Date(startDate)}
-				AND "createdAt" <= ${currentDate}
+			   WHERE "timestamp" >= ${new Date(startDate)}
+				AND "timestamp" <= ${currentDate}
 				AND "type" = 'COIN_TRANSFER'
 			   GROUP BY "hour"
 			   ORDER BY "hour";
@@ -283,10 +283,10 @@ class Stats {
 			startDate = formatDate(oneDayAgo);
 
 			graphData = (await prisma.$queryRaw`
-					SELECT DATE_TRUNC('hour', "createdAt") AS "hour", COUNT(*)::int AS "count"
+					SELECT DATE_TRUNC('hour', "timestamp") AS "hour", COUNT(*)::int AS "count"
 					FROM "Transactions"
-					WHERE "createdAt" >= ${new Date(startDate)}
-					AND "createdAt" <= ${currentDate}
+					WHERE "timestamp" >= ${new Date(startDate)}
+					AND "timestamp" <= ${currentDate}
 					AND "type" = 'COIN_TRANSFER'
 					GROUP BY "hour"
 					ORDER BY "hour";
@@ -302,10 +302,10 @@ class Stats {
 			startDate = formatDateForDay(fromDate);
 
 			graphData = (await prisma.$queryRaw`
-				   SELECT DATE_TRUNC('day', "createdAt") AS "day", COUNT(*)::int AS "count"
+				   SELECT DATE_TRUNC('day', "timestamp") AS "day", COUNT(*)::int AS "count"
 				   FROM "Transactions"
-				   WHERE "createdAt" >= ${new Date(startDate)}
-					AND "createdAt" <= ${currentDate}
+				   WHERE "timestamp" >= ${new Date(startDate)}
+					AND "timestamp" <= ${currentDate}
 					AND "type" = 'COIN_TRANSFER'
 				   GROUP BY "day"
 				   ORDER BY "day";
@@ -322,10 +322,10 @@ class Stats {
 			startDate = formatDateForYear(oneYearAgo);
 
 			graphData = (await prisma.$queryRaw`
-					SELECT DATE_TRUNC('month', "createdAt") AS "month", COUNT(*)::int AS "count"
+					SELECT DATE_TRUNC('month', "timestamp") AS "month", COUNT(*)::int AS "count"
 					FROM "Transactions"
-					WHERE "createdAt" >= ${new Date(startDate)}
-					AND "createdAt" <= ${currentDate}
+					WHERE "timestamp" >= ${new Date(startDate)}
+					AND "timestamp" <= ${currentDate}
 					AND "type" = 'COIN_TRANSFER'
 					GROUP BY "month"
 					ORDER BY "month";
@@ -377,10 +377,10 @@ class Stats {
 			oneHourAgo.setHours(oneHourAgo.getHours() - 1);
 			startDate = formatDateByMin(oneHourAgo);
 			graphData = (await prisma.$queryRaw`
-               SELECT DATE_TRUNC('minute', "createdAt") AS "hour", COUNT(*)::int AS "count"
+               SELECT DATE_TRUNC('minute', "timestamp") AS "hour", COUNT(*)::int AS "count"
                FROM "Transactions"
-               WHERE "createdAt" >= ${new Date(startDate)}
-                   AND "createdAt" <= ${currentDate}
+               WHERE "timestamp" >= ${new Date(startDate)}
+                   AND "timestamp" <= ${currentDate}
                    AND "type" = 'CONTRACT_CREATION'
                GROUP BY "hour"
                ORDER BY "hour";
@@ -398,10 +398,10 @@ class Stats {
 			startDate = formatDate(oneDayAgo);
 
 			graphData = (await prisma.$queryRaw`
-				   SELECT DATE_TRUNC('hour', "createdAt") AS "hour", COUNT(*)::int AS "count"
+				   SELECT DATE_TRUNC('hour', "timestamp") AS "hour", COUNT(*)::int AS "count"
 				   FROM "Transactions"
-				   WHERE "createdAt" >= ${new Date(startDate)}
-					AND "createdAt" <= ${currentDate}
+				   WHERE "timestamp" >= ${new Date(startDate)}
+					AND "timestamp" <= ${currentDate}
 					AND "type" = 'CONTRACT_CREATION'
 				   GROUP BY "hour"
 				   ORDER BY "hour";
@@ -417,10 +417,10 @@ class Stats {
 			startDate = formatDateForDay(fromDate);
 
 			graphData = (await prisma.$queryRaw`
-				   SELECT DATE_TRUNC('day', "createdAt") AS "day", COUNT(*)::int AS "count"
+				   SELECT DATE_TRUNC('day', "timestamp") AS "day", COUNT(*)::int AS "count"
 				   FROM "Transactions"
-				   WHERE "createdAt" >= ${new Date(startDate)}
-					AND "createdAt" <= ${currentDate}
+				   WHERE "timestamp" >= ${new Date(startDate)}
+					AND "timestamp" <= ${currentDate}
 					AND "type" = 'CONTRACT_CREATION'
 				   GROUP BY "day"
 				   ORDER BY "day";
@@ -437,10 +437,10 @@ class Stats {
 			startDate = formatDateForYear(oneYearAgo);
 
 			graphData = (await prisma.$queryRaw`
-					SELECT DATE_TRUNC('month', "createdAt") AS "month", COUNT(*)::int AS "count"
+					SELECT DATE_TRUNC('month', "timestamp") AS "month", COUNT(*)::int AS "count"
 					FROM "Transactions"
-					WHERE "createdAt" >= ${new Date(startDate)}
-					AND "createdAt" <= ${currentDate}
+					WHERE "timestamp" >= ${new Date(startDate)}
+					AND "timestamp" <= ${currentDate}
 					AND "type" = 'CONTRACT_CREATION'
 					GROUP BY "month"
 					ORDER BY "month";

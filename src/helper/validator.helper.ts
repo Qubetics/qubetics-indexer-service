@@ -183,7 +183,6 @@ async function getValidatorsInfo(
 		const response: AxiosResponse = await apiRes.get(
 			'/cosmos/staking/v1beta1/validators',
 		);
-		console.log('responseOFvalidaorinfo', response);
 		const validators: ValidatorInfo[] = [];
 		const validatorAddresses: string[] = [];
 		console.log(response?.data?.validators);

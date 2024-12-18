@@ -329,14 +329,14 @@ class ProcessHelper {
 			}
 			switch (tx.type) {
 				case TRANSACTION_TYPE.CONTRACT_CREATION:
-					console.log('CONTRACT_CREATION CASE: ');
+					console.log('CONTRACT_CREATION CASE: ', `${tx.txhash}`);
 					/* Contract Craetion Transaction Saving Code space */
 					await this.handleContractCreation(tx);
 					break;
 
 				case TRANSACTION_TYPE.CONTRACT_TRANSFER:
 					/* Contract Transfer or execution Transaction Saving Code space */
-					console.log('CONTRACT_TRANSFER CASE: ');
+					console.log('CONTRACT_TRANSFER CASE: ', `${tx.txhash}`);
 					await this.handleContractExecution(tx);
 					RabbitMqService.enqueueData(
 						'DECODE_NEW_TRANSACTION',
@@ -345,7 +345,7 @@ class ProcessHelper {
 					break;
 
 				case TRANSACTION_TYPE.COIN_TRANSFER:
-					console.log('COIN_TRANSFER CASE: ');
+					console.log('COIN_TRANSFER CASE: ', `${tx.txhash}`);
 					/* Coin Transfer Transaction Count Saving Code space */
 					await this.handleCoinTransfer(tx);
 					break;
