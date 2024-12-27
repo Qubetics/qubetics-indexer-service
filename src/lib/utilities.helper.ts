@@ -50,11 +50,11 @@ export const noExponent = function (num: number | string) {
 		}
 		mag -= str.length;
 		while (mag--) z += '0';
-		console.log('str + z : ', str + z);
+		// console.log('str + z : ', str + z);
 
 		return str + z;
 	} catch (error) {
-		console.log('Exponent error', error);
+		// console.log('Exponent error', error);
 		return '0';
 	}
 };

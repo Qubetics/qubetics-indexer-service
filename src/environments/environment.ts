@@ -64,7 +64,6 @@ class Environment implements IEnvironment {
 		this.redisHost = <string>process.env.REDIS_HOST;
 		this.redisPort = <string>process.env.REDIS_PORT;
 		this.rabbitMq = <string>process.env.RABITMQ_URL;
-		this.cluster = JSON.parse(<string>process.env.CLUSTER);
 		this.coinMarketApi = <string>process.env.COIN_MARKET_API_PATH;
 		this.coinMarketKey = <string>process.env.COIN_MARKET_API_KEY;
 		this.evmHost = <string>process.env.SWAGGER_HTTP_HOST;

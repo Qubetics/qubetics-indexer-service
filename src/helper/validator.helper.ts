@@ -139,7 +139,6 @@ const calculateData = async (): Promise<
 			bondedRate: params?.bondedRate,
 			apy: apyValue,
 		};
-		console.log('apiRes-calculateData', apiRes);
 
 		await RedisService.setString(
 			REDIS_KEY.VALIDATOR_DATA,
@@ -185,7 +184,7 @@ async function getValidatorsInfo(
 		);
 		const validators: ValidatorInfo[] = [];
 		const validatorAddresses: string[] = [];
-		console.log(response?.data?.validators);
+		// console.log(response?.data?.validators);
 		for (let i = 0; i < response?.data?.validators?.length; i += 1) {
 			const validator = response.data.validators[i];
 			const validatorOperaterAddress = validator.operator_address;
@@ -196,21 +195,19 @@ async function getValidatorsInfo(
 				decodeAddress.prefix,
 				decodeAddress.words,
 			);
-			console.log('decodeAddressll', address);
 
-			console.log('address', address);
+			// console.log('address', address);
 			const data = bech32.fromWords(decodeAddress.words); // Convert 5-bit words to binary
-			console.log(
-				'decodeVALIDE',
-				`0x${Buffer.from(data).toString('hex')}`,
-			); // Convert binary to hex
+			// console.log(
+			// 	'decodeVALIDE',
+			// 	`0x${Buffer.from(data).toString('hex')}`,
+			// ); // Convert binary to hex
 
 			validatorAddresses.push(address);
 			const stakeDetails: any = await getValidatorStakeDetails(
 				apiRes,
 				validator.operator_address,
 			);
-			console.log('stakeDetails', stakeDetails);
 
 			const valIndex: number =
 				stakeDetails?.delegation_responses.findIndex(
@@ -219,14 +216,14 @@ async function getValidatorsInfo(
 						e.delegation.validator_address ===
 							validatorOperaterAddress,
 				);
-			console.log('valIndex', valIndex);
+			// console.log('valIndex', valIndex);
 
 			const deleShares =
 				stakeDetails?.delegation_responses[valIndex]?.delegation
 					.shares || 0;
 			const selfStake = deleShares || 0;
 			const delegatorCount = parseInt(stakeDetails.pagination.total, 10);
-			console.log('deleShares', deleShares, delegatorCount);
+			// console.log('deleShares', deleShares, delegatorCount);
 
 			let status = RES_MSG.DEACTIVATING;
 
@@ -252,7 +249,6 @@ async function getValidatorsInfo(
 			};
 
 			validators.push(validatorData);
-			console.log('validatorDataCCCC', validatorData, validatorData);
 			await ExlorerHelper.saveValidatorData(validatorData);
 		}
 

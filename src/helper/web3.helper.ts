@@ -21,7 +21,7 @@ class Web3Helper {
 		try {
 			return await this.web3.eth.getBlockNumber();
 		} catch (err) {
-			console.log('error : ', err);
+			// console.log('error : ', err);
 			throw new Error(ERROR_MSG.GET_BLOCK_INFO_ERROR);
 		}
 	}
@@ -138,7 +138,7 @@ export class Web3SocketHelper {
 		});
 
 		web3wsProvider.on('error', () => {
-			console.log('error while making connection with evm... ');
+			// console.log('error while making connection with evm... ');
 			web3wsProvider.connect();
 		});
 

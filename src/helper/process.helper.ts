@@ -440,7 +440,6 @@ class ProcessHelper {
 				blockNumber: Number(tx?.blocknumber),
 				bytecodeHash: hashString(bytecode),
 			};
-			console.log('contractDetails++++++++++++++++++', contractDetails);
 
 			const contractSaveRes = await explorerHelper.saveContractDeployTx(
 				contractDetails,
@@ -563,7 +562,6 @@ class ProcessHelper {
 					const logsRes =
 						await explorerHelper.saveContractLogs(contractLogData);
 
-					console.log('address++++++++++++++++', tx.toAddress);
 
 					if (await explorerHelper.ifContractExist(tx.toAddress)) {
 						await explorerHelper.updateContractExec(tx.toAddress);

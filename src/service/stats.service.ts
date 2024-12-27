@@ -508,7 +508,7 @@ class Stats {
 			startDate = formatDate(oneDayAgo);
 
 			graphData = (await prisma.$queryRaw`
-				 SELECT DATE_TRUNC('hour', "timestamp") AS "hour", ROUND(SUM((CAST("gasPrice" AS numeric) * CAST("gas" AS numeric))/1e18) AS "count")
+				 SELECT DATE_TRUNC('hour', "timestamp") AS "hour", ROUND(SUM((CAST("gasPrice" AS numeric) * CAST("gas" AS numeric))/1e18), 2) AS "count"
 					FROM "Transactions"
 					WHERE "timestamp" >= ${new Date(startDate)}
 					AND "timestamp" <= ${currentDate}
@@ -516,6 +516,8 @@ class Stats {
 					GROUP BY "hour"
 					ORDER BY "hour";
 				`) as Array<{ hour: Date; count: number }>;
+
+
 			const hourly = await fillMissingDatesWithZeroByhr(
 				graphData,
 				new Date(startDate),
@@ -527,7 +529,7 @@ class Stats {
 			startDate = formatDateForDay(fromDate);
 
 			graphData = (await prisma.$queryRaw`
-				   SELECT DATE_TRUNC('day', "timestamp") AS "day", ROUND(SUM((CAST("gasPrice" AS numeric) * CAST("gas" AS numeric))/1e18) AS "count")
+				   SELECT DATE_TRUNC('day', "timestamp") AS "day", ROUND(SUM((CAST("gasPrice" AS numeric) * CAST("gas" AS numeric))/1e18), 2) AS "count"
 				   FROM "Transactions"
 				   WHERE "timestamp" >= ${new Date(startDate)}
 					AND "timestamp" <= ${currentDate}
@@ -547,7 +549,7 @@ class Stats {
 			startDate = formatDateForYear(oneYearAgo);
 
 			graphData = (await prisma.$queryRaw`
-					SELECT DATE_TRUNC('month', "timestamp") AS  "month", ROUND(SUM((CAST("gasPrice" AS numeric) * CAST("gas" AS numeric))/1e18) AS "count")
+					SELECT DATE_TRUNC('month', "timestamp") AS  "month", ROUND(SUM((CAST("gasPrice" AS numeric) * CAST("gas" AS numeric))/1e18), 2) AS "count"
 						FROM "Transactions"
 						WHERE "timestamp" >= ${oneYearAgo}
 						AND "timestamp" <= ${currentDate}
@@ -589,7 +591,7 @@ class Stats {
 			// 	},
 			// };
 		} catch (err) {
-			console.log('Error while hitting query for txFee sum::>> ', err);
+			console.log('Error while calculating the tx fee: ', err);
 			return { key: null };
 		}
 	};
@@ -707,6 +709,8 @@ export class StatsUpdater {
 			// assign the current time stats records
 			const tempCurrent: { [key: string]: any } = {};
 			const currentTimeStamp = Date.now();
+			console.log(this.statsState);
+			
 			Object.keys(this.statsState).forEach((key) => {
 				const tempStats = this.statsState[key];
 				tempCurrent[key] = { current: {} };
@@ -795,8 +799,8 @@ export class StatsUpdater {
 		// if key is not null save the computed stats data
 		statsDataList.forEach((statsData: any) => {
 			this.statsState[statsData.key] = statsData.data;
-			console.log('statsData.key', statsData.key);
-			console.log(statsData.statsCurrents, 'statsData.statsCurrents');
+			// console.log('statsData.key', statsData.key);
+			// console.log(statsData.statsCurrents, 'statsData.statsCurrents');
 			if (statsData.key) {
 				this.statsCurrents[statsData.key] = {
 					current: generateTimeRangesFromObj(statsData.statsCurrents),
@@ -812,7 +816,7 @@ export class StatsUpdater {
 	// Queue helper for processing latest stats updation
 	updateInMemoryStats = (txDetails: StatsType) => {
 		try {
-			console.log('txDetails IN updateInMemoryStats', txDetails);
+			// console.log('txDetails IN updateInMemoryStats', txDetails);
 			if (Object.keys(this.statsCurrents).length === 0) {
 				return false;
 			}

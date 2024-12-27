@@ -8,7 +8,6 @@ interface IEnvironment {
 	redisHost: string;
 	redisPort: string;
 	rabbitMq: string;
-	cluster: boolean;
 	coinMarketApi: string;
 	coinMarketKey: string;
 	currency: string;
