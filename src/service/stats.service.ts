@@ -683,6 +683,9 @@ export class StatsUpdater {
 		const isStatsGenerated = await redisHelper.getString(
 			REDIS_KEY.StatsGenerated,
 		);
+
+		console.log("isStatsGenerated",isStatsGenerated);
+		
 		// const isStatsGenerated = 0;
 
 		if (Number(isStatsGenerated)) {

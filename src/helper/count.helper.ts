@@ -126,18 +126,18 @@ class CountHelper {
 
 	// *************************** Internals **************************
 	_updateInMemory = (countKey: string, key: string, count: number) => {
-		console.log("this.counts" , this.counts);
-		
+		console.log('this.counts', this.counts);
+
 		if (!this.counts[countKey]) return null;
 		const redisPayload = { key: '', count: 0 };
 		this.counts[countKey] += count;
 
-		console.log("	this.counts[countKey]" , 	this.counts[countKey] , countKey);
-		
+		console.log('	this.counts[countKey]', this.counts[countKey], countKey);
+
 		redisPayload.count += this.counts[countKey];
 		redisPayload.key = key;
-		console.log("redisPayload ", redisPayload);
-		
+		console.log('redisPayload ', redisPayload);
+
 		return redisPayload;
 	};
 }
