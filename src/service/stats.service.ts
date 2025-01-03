@@ -517,7 +517,6 @@ class Stats {
 					ORDER BY "hour";
 				`) as Array<{ hour: Date; count: number }>;
 
-
 			const hourly = await fillMissingDatesWithZeroByhr(
 				graphData,
 				new Date(startDate),
@@ -710,7 +709,7 @@ export class StatsUpdater {
 			const tempCurrent: { [key: string]: any } = {};
 			const currentTimeStamp = Date.now();
 			console.log(this.statsState);
-			
+
 			Object.keys(this.statsState).forEach((key) => {
 				const tempStats = this.statsState[key];
 				tempCurrent[key] = { current: {} };

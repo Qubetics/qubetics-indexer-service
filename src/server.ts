@@ -52,7 +52,7 @@ app.init()
 		const instance = Web3SocketHelper.getInstance();
 		await instance.initializeWsConnection();
 		await countHelper.initializeCount();
-		
+
 		new StatsUpdater().start();
 		processHelper.subscribeBlocksWs();
 		processHelper.ProcessDowntimeBlock();

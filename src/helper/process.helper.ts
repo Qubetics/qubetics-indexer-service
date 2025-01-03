@@ -562,7 +562,6 @@ class ProcessHelper {
 					const logsRes =
 						await explorerHelper.saveContractLogs(contractLogData);
 
-
 					if (await explorerHelper.ifContractExist(tx.toAddress)) {
 						await explorerHelper.updateContractExec(tx.toAddress);
 					}
