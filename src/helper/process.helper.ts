@@ -595,7 +595,7 @@ class ProcessHelper {
 					await explorerHelper.updateToken({
 						contractAddress: tx?.toAddress,
 						totalSupply: noExponent(totalSupply)
-					})
+					});
 
 
 
