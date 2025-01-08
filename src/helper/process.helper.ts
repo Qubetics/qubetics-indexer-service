@@ -286,7 +286,6 @@ class ProcessHelper {
 	async processTransactions(tx: ITransactionPayload) {
 		try {
 			const transactions = { ...tx };
-			console.log('Transaction: ', transactions?.blockhash);
 			rabbitmqService.enqueueData(
 				QUEUE_NAME.STATS_UPDATE,
 				JSON.stringify({
@@ -297,7 +296,7 @@ class ProcessHelper {
 					txnCount: Number(
 						(Number(transactions.gas) *
 							Number(transactions.gasPrice)) /
-							1e18,
+						1e18,
 					),
 				}),
 			);
@@ -537,13 +536,7 @@ class ProcessHelper {
 							},
 						});
 					}
-					const tokenbalanceTo = await contractType.contract.methods
-						.balanceOf(toAddress)
-						.call();
 
-					const tokenbalancefrom = await contractType.contract.methods
-						.balanceOf(fromAddress)
-						.call();
 
 					const contractLogData: IContractLogs = {
 						logs: JSON.stringify(tx.logs),
@@ -565,19 +558,49 @@ class ProcessHelper {
 					if (await explorerHelper.ifContractExist(tx.toAddress)) {
 						await explorerHelper.updateContractExec(tx.toAddress);
 					}
+					let fromRes: any;
+					let toRes: any;
 
-					const fromRes = await explorerHelper.upsertHolder({
-						address: tx.fromAddress,
-						contractAddress: tx.toAddress,
-						tokenBalance: exp(`${tokenbalancefrom}`),
-					});
-					const toRes = await explorerHelper.upsertHolder({
-						address: tx.toAddress,
-						contractAddress: tx.toAddress,
-						tokenBalance: exp(`${tokenbalanceTo}`),
-					});
+					if (fromAddress != '0x0000000000000000000000000000000000000000') {
+						const tokenbalancefrom = await contractType.contract.methods
+							.balanceOf(fromAddress)
+							.call();
 
-					if (logsRes.error || fromRes.error || toRes.error)
+						fromRes = await explorerHelper.upsertHolder({
+							address: fromAddress,
+							contractAddress: tx.toAddress,
+							tokenBalance: exp(`${tokenbalancefrom}`),
+						});
+					}
+					if (fromAddress != toAddress) {
+						const tokenbalanceTo = await contractType.contract.methods
+							.balanceOf(toAddress)
+							.call();
+						toRes = await explorerHelper.upsertHolder({
+							address: toAddress,
+							contractAddress: tx.toAddress,
+							tokenBalance: exp(`${tokenbalanceTo}`),
+						});
+					}
+
+					let totalSupply: number;
+					try {
+						totalSupply = Number(
+							await contractType?.contract?.methods?.totalSupply().call(),
+						);
+					} catch (error) {
+						totalSupply = 0;
+					}
+
+					await explorerHelper.updateToken({
+						contractAddress: tx?.toAddress,
+						totalSupply: noExponent(totalSupply)
+					})
+
+
+
+
+					if (logsRes?.error || fromRes?.error || toRes?.error)
 						throw new Error(
 							'Error while saving contract execution details',
 						);

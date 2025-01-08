@@ -684,10 +684,6 @@ export class StatsUpdater {
 			REDIS_KEY.StatsGenerated,
 		);
 
-		console.log("isStatsGenerated",isStatsGenerated);
-		
-		// const isStatsGenerated = 0;
-
 		if (Number(isStatsGenerated)) {
 			this.statsState = {
 				[REDIS_KEY.TxHistory]: await redisHelper.getString(

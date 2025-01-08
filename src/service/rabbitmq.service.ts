@@ -116,11 +116,6 @@ class RabbitMq {
 					const txRes =
 						await processHelper.processTransactions(txData);
 
-					console.log(
-						'txRes  after processing transaction : ',
-						txRes,
-					);
-
 					if (txRes.error) {
 						this.enqueueData(
 							QUEUE_NAME.ERROR_BLOCK,

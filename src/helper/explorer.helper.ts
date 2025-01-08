@@ -399,6 +399,29 @@ class ExlorerHelper {
 		}
 	};
 
+	updateToken = async (tokenData: any): Promise<IESResponse> => {
+		try {
+			await prisma.tokens.update({
+				where: {contractAddress : tokenData.contractAddress},
+				data: tokenData,
+			});
+			return {
+				error: false,
+				message: RES_MSG.TOKEN_ADDED,
+				data: { isAdded: true },
+			};
+		} catch (err) {
+			console.error('error while saving token detail', err);
+			return {
+				error: true,
+				message: RES_MSG.BLOCK_ADDED_ERROR,
+				data: { isAdded: false },
+			};
+		}
+	};
+
+
+
 	saveTokenPriceByDate = async () => {
 		try {
 			const { symbol, currency, coinMarketApi, coinMarketKey } =
