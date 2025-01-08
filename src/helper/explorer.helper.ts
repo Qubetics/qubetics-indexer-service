@@ -150,6 +150,7 @@ class ExlorerHelper {
 						JSON.stringify({
 							type: REDIS_KEY.NewAccountHistory,
 							date: Date.now(),
+							txnCount: 1,
 						}),
 					);
 					await prisma.users.create({
