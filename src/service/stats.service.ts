@@ -190,8 +190,8 @@ class Stats {
 			graphData = (await prisma.$queryRaw`
 				  SELECT DATE_TRUNC('day', "createdAt") AS "day", COUNT(*)::int AS "count"
 				  FROM "Users"
-				  WHERE "createdAt" >= ${fromMonth}
-					AND "createdAt" <= ${getCurrentDate}
+				  WHERE "createdAt" >= ${fromMonth}::timestamp
+					AND "createdAt" <= ${getCurrentDate}::timestamp
 					
 				  GROUP BY "day"
 				  ORDER BY "day";
@@ -214,8 +214,8 @@ class Stats {
 			graphData = (await prisma.$queryRaw`
 					SELECT DATE_TRUNC('month', "createdAt") AS "month", COUNT(*)::int AS "count"
 					FROM "Users"
-					WHERE "createdAt" >= ${fromYear}
-					AND "createdAt" <= ${getCurrentDate}
+					WHERE "createdAt" >= ${fromYear}::timestamp
+					AND "createdAt" <= ${getCurrentDate}::timestamp
 					GROUP BY "month"
 					ORDER BY "month";
 				`) as Array<{ month: Date; count: number }>;

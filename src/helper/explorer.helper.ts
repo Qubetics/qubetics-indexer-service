@@ -676,7 +676,6 @@ class ExlorerHelper {
 		validatorData: IValidator,
 	): Promise<IESResponse> => {
 		try {
-			console.log('validatorData', validatorData);
 			const existingValidator = await prisma.validator.findUnique({
 				where: { address: validatorData.address },
 			});
