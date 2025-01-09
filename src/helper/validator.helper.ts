@@ -20,16 +20,18 @@ async function getParams(apiRes: AxiosInstance): Promise<Params | false> {
 			inflationRateResponse,
 			poolResponse,
 			paramsResponse,
-			totalSupplyResponse,
+			total_Supply,
+			annualProvision,
 		] = await Promise.all([
 			apiRes.get('/cosmos/staking/v1beta1/validators'),
 			apiRes.get(
-				`/cosmos/bank/v1beta1/supply/by_denom?denom=${environment.projectName}`,
+				`/cosmos/bank/v1beta1/supply/by_denom?denom=${environment.symbol}`,
 			),
 			apiRes.get('/cosmos/mint/v1beta1/inflation'),
 			apiRes.get('/cosmos/staking/v1beta1/pool'),
 			apiRes.get('/cosmos/distribution/v1beta1/params'),
 			apiRes.get('/cosmos/bank/v1beta1/supply'),
+			apiRes.get('/cosmos/mint/v1beta1/annual_provisions'),
 		]);
 
 		// Filter active validators
@@ -52,27 +54,19 @@ async function getParams(apiRes: AxiosInstance): Promise<Params | false> {
 
 		const formattedInflationRate = `${inflation_rate}`;
 
-		const annualProvisions = Number(
-			circulation_supply * parseFloat(formattedInflationRate),
-		);
-
 		let blocksPerYear = Number(CONST_NAME.BLOCK_PER_YEAR);
 		blocksPerYear = Number(blocksPerYear / 2);
 		const inflation = formattedInflationRate;
 
 		const bondedTokens = Number(poolResponse.data.pool.bonded_tokens);
 
-		// Find the entry with denom "qubetics"
-		const qubeticsAmount = totalSupplyResponse.data.supply.find(
-			(item: any) => item.denom === 'qubetics',
-		);
+		const annualProvisions = annualProvision.data.annual_provisions;
 
-		const totalSupply = qubeticsAmount.amount;
+		const totalSupply = total_Supply.data.supply[0].amount;
 
 		const bondedRate = Number(
 			((bondedTokens / totalSupply) * 100).toFixed(3),
 		);
-
 		const communityTax = Number(paramsResponse.data.params.community_tax);
 
 		return {
@@ -85,6 +79,7 @@ async function getParams(apiRes: AxiosInstance): Promise<Params | false> {
 			totalValidator,
 			circulation_supply,
 			bondedRate,
+			total_supply: totalSupply,
 		};
 	} catch (error) {
 		logger.log('error occurred while calculating stake APR', error);

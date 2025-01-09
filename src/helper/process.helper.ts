@@ -296,7 +296,7 @@ class ProcessHelper {
 					txnCount: Number(
 						(Number(transactions.gas) *
 							Number(transactions.gasPrice)) /
-						1e18,
+							1e18,
 					),
 				}),
 			);
@@ -537,7 +537,6 @@ class ProcessHelper {
 						});
 					}
 
-
 					const contractLogData: IContractLogs = {
 						logs: JSON.stringify(tx.logs),
 						topics,
@@ -561,10 +560,14 @@ class ProcessHelper {
 					let fromRes: any;
 					let toRes: any;
 
-					if (fromAddress != '0x0000000000000000000000000000000000000000') {
-						const tokenbalancefrom = await contractType.contract.methods
-							.balanceOf(fromAddress)
-							.call();
+					if (
+						fromAddress !==
+						'0x0000000000000000000000000000000000000000'
+					) {
+						const tokenbalancefrom =
+							await contractType.contract.methods
+								.balanceOf(fromAddress)
+								.call();
 
 						fromRes = await explorerHelper.upsertHolder({
 							address: fromAddress,
@@ -572,10 +575,11 @@ class ProcessHelper {
 							tokenBalance: exp(`${tokenbalancefrom}`),
 						});
 					}
-					if (fromAddress != toAddress) {
-						const tokenbalanceTo = await contractType.contract.methods
-							.balanceOf(toAddress)
-							.call();
+					if (fromAddress !== toAddress) {
+						const tokenbalanceTo =
+							await contractType.contract.methods
+								.balanceOf(toAddress)
+								.call();
 						toRes = await explorerHelper.upsertHolder({
 							address: toAddress,
 							contractAddress: tx.toAddress,
@@ -586,7 +590,9 @@ class ProcessHelper {
 					let totalSupply: number;
 					try {
 						totalSupply = Number(
-							await contractType?.contract?.methods?.totalSupply().call(),
+							await contractType?.contract?.methods
+								?.totalSupply()
+								.call(),
 						);
 					} catch (error) {
 						totalSupply = 0;
@@ -594,11 +600,8 @@ class ProcessHelper {
 
 					await explorerHelper.updateToken({
 						contractAddress: tx?.toAddress,
-						totalSupply: noExponent(totalSupply)
+						totalSupply: noExponent(totalSupply),
 					});
-
-
-
 
 					if (logsRes?.error || fromRes?.error || toRes?.error)
 						throw new Error(
