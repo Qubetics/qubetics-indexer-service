@@ -27,6 +27,7 @@ import {
 	fillMissingMinutes,
 	formatDateForYear,
 	fillMissingDatesWithZeroByMonth,
+	formatTheDate,
 } from '../lib/utilities.helper';
 import redisHelper from './redis.helper';
 
@@ -136,6 +137,7 @@ class Stats {
 			let startDate = '';
 
 			const currentDate = new Date();
+			const getCurrentDate = await formatTheDate(currentDate);
 
 			const currentDateFormated = formatDateByMin(new Date());
 			const oneHourAgo = new Date();
@@ -162,6 +164,7 @@ class Stats {
 			const oneDayAgo = new Date();
 			oneDayAgo.setDate(oneDayAgo.getDate() - 1);
 			startDate = formatDate(oneDayAgo);
+
 			graphData = (await prisma.$queryRaw`
 					SELECT DATE_TRUNC('hour', "createdAt") AS "hour", COUNT(*)::int AS "count"
 					FROM "Users"
@@ -181,12 +184,14 @@ class Stats {
 			const fromDate = new Date(currentDate);
 			fromDate.setDate(fromDate.getDate() - daysAgo);
 			startDate = formatDateForDay(fromDate);
+			console.log('startDateMONTH', startDate);
+			const fromMonth = await formatTheDate(fromDate);
 
 			graphData = (await prisma.$queryRaw`
 				  SELECT DATE_TRUNC('day', "createdAt") AS "day", COUNT(*)::int AS "count"
 				  FROM "Users"
-				  WHERE "createdAt" >= ${new Date(startDate)}
-					AND "createdAt" <= ${currentDate}
+				  WHERE "createdAt" >= ${fromMonth}
+					AND "createdAt" <= ${getCurrentDate}
 					
 				  GROUP BY "day"
 				  ORDER BY "day";
@@ -201,12 +206,16 @@ class Stats {
 			const oneYearAgo = new Date();
 			oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
 			startDate = formatDateForYear(oneYearAgo);
+			const fromYear = await formatTheDate(oneYearAgo);
+
+			console.log('getCurrentDate', getCurrentDate);
+			console.log(fromYear, 'fromYear');
 
 			graphData = (await prisma.$queryRaw`
 					SELECT DATE_TRUNC('month', "createdAt") AS "month", COUNT(*)::int AS "count"
 					FROM "Users"
-					WHERE "createdAt" >= ${new Date(startDate)}
-					AND "createdAt" <= ${currentDate}
+					WHERE "createdAt" >= ${fromYear}
+					AND "createdAt" <= ${getCurrentDate}
 					GROUP BY "month"
 					ORDER BY "month";
 				`) as Array<{ month: Date; count: number }>;
@@ -220,26 +229,12 @@ class Stats {
 			return {
 				key: REDIS_KEY.NewAccountHistory,
 				data: { hourly, mintue, daily, monthly },
-				// statsCurrents: {
-				// 	mintue: mintue[mintue.length - 1],
-				// 	hourly: hourly[hourly.length - 1],
-				// 	daily: daily[daily.length - 1],
-				// 	monthly: monthly[monthly.length - 1],
-				// },
 				statsCurrents: {
 					hourly: hourly[hourly.length - 1],
 					daily: daily[daily.length - 1],
 					monthly: monthly[monthly.length - 1],
 				},
 			};
-
-			// return {
-			// 	error: false,
-			// 	data: {
-			// 		finalData: finalData as Array<GraphData>,
-			// 		count: await prisma.users.count(),
-			// 	},
-			// };
 		} catch (err) {
 			return { key: null };
 		}

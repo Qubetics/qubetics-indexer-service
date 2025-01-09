@@ -403,7 +403,7 @@ class ExlorerHelper {
 	updateToken = async (tokenData: any): Promise<IESResponse> => {
 		try {
 			await prisma.tokens.update({
-				where: { contractAddress : tokenData.contractAddress },
+				where: { contractAddress: tokenData.contractAddress },
 				data: tokenData,
 			});
 			return {
@@ -420,8 +420,6 @@ class ExlorerHelper {
 			};
 		}
 	};
-
-
 
 	saveTokenPriceByDate = async () => {
 		try {
