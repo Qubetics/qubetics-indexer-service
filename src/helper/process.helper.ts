@@ -162,7 +162,7 @@ class ProcessHelper {
 
 			// contract and coin transafer transactions
 			const _txns = { contractDeployment: 0, coin: 0 };
-			console.log("transactions................",transactions);
+			console.log('transactions................',transactions);
 			
 
 			/* eslint-disable no-restricted-syntax */
@@ -640,7 +640,7 @@ class ProcessHelper {
 			gasPrice: Number(exp(`${tx.gasPrice}`)),
 		};
 
-		console.log("transaction,,,,,,," , tx)
+		console.log('transaction,,,,,,,' , tx);
 
 
 		const coinTxRes = await explorerHelper.coinTransferTxSave(copiedObject);
