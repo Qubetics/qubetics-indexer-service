@@ -162,6 +162,8 @@ class ProcessHelper {
 
 			// contract and coin transafer transactions
 			const _txns = { contractDeployment: 0, coin: 0 };
+			console.log("transactions................",transactions);
+			
 
 			/* eslint-disable no-restricted-syntax */
 			/* eslint-disable no-await-in-loop */
@@ -541,7 +543,7 @@ class ProcessHelper {
 					const contractLogData: IContractLogs = {
 						logs: JSON.stringify(tx.logs),
 						topics,
-						method: '',
+						method: methodSignature,
 						gasFee: tx.gas,
 						methodSignature,
 						txHash: tx.txhash,
@@ -598,8 +600,6 @@ class ProcessHelper {
 					});
 
 
-
-
 					if (logsRes?.error || fromRes?.error || toRes?.error)
 						throw new Error(
 							'Error while saving contract execution details',
@@ -639,6 +639,9 @@ class ProcessHelper {
 			txFee: exp(`${tx.txFee}`),
 			gasPrice: Number(exp(`${tx.gasPrice}`)),
 		};
+
+		console.log("transaction,,,,,,," , tx)
+
 
 		const coinTxRes = await explorerHelper.coinTransferTxSave(copiedObject);
 		return coinTxRes;

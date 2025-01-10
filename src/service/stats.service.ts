@@ -707,8 +707,6 @@ export class StatsUpdater {
 			// assign the current time stats records
 			const tempCurrent: { [key: string]: any } = {};
 			const currentTimeStamp = Date.now();
-			console.log(this.statsState);
-
 			Object.keys(this.statsState).forEach((key) => {
 				const tempStats = this.statsState[key];
 				tempCurrent[key] = { current: {} };
@@ -737,13 +735,6 @@ export class StatsUpdater {
 							);
 
 							//    this.addNextDatePoint(shortInnerKey, key, newTimePoint.toString())
-							console.log(
-								'Recovery time point added for: ',
-								shortInnerKey,
-								key,
-								new Date(newTimePoint).toLocaleString(),
-							);
-
 							/**
 							 * new stats record for current timepoint
 							 * (this is generated due to there is a difference between
@@ -793,7 +784,6 @@ export class StatsUpdater {
 			this.stats.computeContractDeployHistory(),
 			this.stats.computeTxFeeSum(),
 		]);
-		console.log('vstatsDataList', statsDataList);
 		// if key is not null save the computed stats data
 		statsDataList.forEach((statsData: any) => {
 			this.statsState[statsData.key] = statsData.data;

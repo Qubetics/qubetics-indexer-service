@@ -319,12 +319,10 @@ class RabbitMq {
 		this.channel.consume(
 			QUEUE_NAME.STATS_UPDATE,
 			(msg: amqp.Message | null) => {
-				// console.log('message in STATS_UPDATE ', msg);
 				if (!msg) return;
 				const message: StatsType = JSON.parse(
 					msg.content.toString('utf-8'),
 				);
-				console.log('STATS_UPDATE', message);
 				// update the latest count for data tables
 				countHelper.updateLatestCount(message);
 
