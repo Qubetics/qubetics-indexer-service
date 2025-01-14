@@ -28,6 +28,7 @@ import {
 import rabbitmqService from '../service/rabbitmq.service';
 import explorerHelper from './explorer.helper';
 import { Web3SocketHelper } from './web3.helper';
+import Web3Helper from './web3.helper';
 
 class ProcessHelper {
 	/**
@@ -162,8 +163,8 @@ class ProcessHelper {
 
 			// contract and coin transafer transactions
 			const _txns = { contractDeployment: 0, coin: 0 };
-			console.log('transactions................',transactions);
-			
+			console.log('transactions................', transactions);
+
 
 			/* eslint-disable no-restricted-syntax */
 			/* eslint-disable no-await-in-loop */
@@ -298,7 +299,7 @@ class ProcessHelper {
 					txnCount: Number(
 						(Number(transactions.gas) *
 							Number(transactions.gasPrice)) /
-							1e18,
+						1e18,
 					),
 				}),
 			);
@@ -516,6 +517,11 @@ class ProcessHelper {
 
 					const methodSignature = topics[0].substring(0, 10);
 
+
+					let method = methodSignature;
+					if (contractType.type !== CONTRACT_TYPE.UNKNOWN) {
+						method = await Web3Helper.getEventValue(methodSignature, contractType.type)
+					}
 					// let method: string = (await explorerHelper.getEventValue(
 					// 	methodSignature,
 					// )) as string;
@@ -542,7 +548,7 @@ class ProcessHelper {
 					const contractLogData: IContractLogs = {
 						logs: JSON.stringify(tx.logs),
 						topics,
-						method: methodSignature,
+						method: method || methodSignature,
 						gasFee: tx.gas,
 						methodSignature,
 						txHash: tx.txhash,
@@ -646,7 +652,7 @@ class ProcessHelper {
 			gasPrice: Number(exp(`${tx.gasPrice}`)),
 		};
 
-		console.log('transaction,,,,,,,' , tx);
+		console.log('transaction,,,,,,,', tx);
 
 
 		const coinTxRes = await explorerHelper.coinTransferTxSave(copiedObject);
