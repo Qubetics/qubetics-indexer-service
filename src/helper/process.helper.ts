@@ -27,8 +27,7 @@ import {
 } from '../service/index';
 import rabbitmqService from '../service/rabbitmq.service';
 import explorerHelper from './explorer.helper';
-import { Web3SocketHelper } from './web3.helper';
-import Web3Helper from './web3.helper';
+import Web3Helper, { Web3SocketHelper } from './web3.helper';
 
 class ProcessHelper {
 	/**
@@ -500,11 +499,19 @@ class ProcessHelper {
 						updatedAt: new Date(tx.timestamp).toISOString(),
 					},
 				});
-				console.log('data', data);
 			}
+
+			// const methodSignature = topics[0].substring(0, 10);
+			const methodSignature = tx.input ? tx.input.slice(0, 10) : '';
+
+			let method = methodSignature;
+			if (contractType.type !== CONTRACT_TYPE.UNKNOWN) {
+				method = Web3Helper.getEventValue(methodSignature, contractType.type, tx?.input);
+			}
+			
 			if (tx?.logs?.length) {
 				for (let i = 0; i < tx?.logs?.length; i += 1) {
-					const topics = tx?.logs[i].topics;
+					const topics = tx?.logs[i].topics;					
 					const fromAddress =
 						Web3SocketHelper.web3Ws.utils.toChecksumAddress(
 							`0x${topics[1].substring(26, topics[1].length)}`,
@@ -515,13 +522,7 @@ class ProcessHelper {
 							`0x${topics[2].substring(26, topics[2].length)}`,
 						);
 
-					const methodSignature = topics[0].substring(0, 10);
-
-
-					let method = methodSignature;
-					if (contractType.type !== CONTRACT_TYPE.UNKNOWN) {
-						method = await Web3Helper.getEventValue(methodSignature, contractType.type)
-					}
+					
 					// let method: string = (await explorerHelper.getEventValue(
 					// 	methodSignature,
 					// )) as string;
@@ -548,7 +549,7 @@ class ProcessHelper {
 					const contractLogData: IContractLogs = {
 						logs: JSON.stringify(tx.logs),
 						topics,
-						method: method || methodSignature,
+						method,
 						gasFee: tx.gas,
 						methodSignature,
 						txHash: tx.txhash,

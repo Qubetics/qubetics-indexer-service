@@ -1,7 +1,7 @@
 import Web3 from 'web3';
+import { ERC20ABI, ERC721ABI } from '../constant/abi';
 import { CONTRACT_TYPE, ERROR_MSG } from '../constant/response';
 import logger from '../lib/logger';
-import { ERC20ABI, ERC721ABI } from '../constant/abi';
 
 class Web3Helper {
 	public web3: Web3;
@@ -90,19 +90,19 @@ class Web3Helper {
 		}
 	}
 
-	async getEventValue(methodSignature: string, contractType: string) {
+	getEventValue(methodSignature: string, contractType: string, inputData: string | null | undefined) {
 		try {
-			let abi = contractType === CONTRACT_TYPE.ERC20 ? ERC20ABI : ERC721ABI;
+			const abi = contractType === CONTRACT_TYPE.ERC20 ? ERC20ABI : ERC721ABI;
 			// Find the matching method
 			const method = abi.find((item: any) => {
-				if (item.type === "function"  || item.type === "event"  ) {
+				if (item.type === 'function' || item.type === 'event') {
 					const signature = this.web3.utils
-						.sha3(`${item.name}(${item.inputs.map((input: any) => input.type).join(",")})`)
+						.sha3(`${item.name}(${item.inputs.map((input: any) => input.type).join(',')})`)
 						?.slice(0, 10); // First 4 bytes						
 					return signature === methodSignature;
 				}
 			});
-			return method ? method.name : methodSignature ;
+			return method ? method.name : methodSignature;
 		} catch (err) {
 			throw new Error(ERROR_MSG.DECODE_PARAM_ERROR);
 		}
