@@ -224,42 +224,9 @@
 
 export const ERC20ABI: any = [
 	{
-		inputs: [
-			{
-				internalType: "address",
-				name: "initialOwner",
-				type: "address"
-			}
-		],
+		inputs: [],
 		stateMutability: "nonpayable",
 		type: "constructor"
-	},
-	{
-		inputs: [],
-		name: "ECDSAInvalidSignature",
-		type: "error"
-	},
-	{
-		inputs: [
-			{
-				internalType: "uint256",
-				name: "length",
-				type: "uint256"
-			}
-		],
-		name: "ECDSAInvalidSignatureLength",
-		type: "error"
-	},
-	{
-		inputs: [
-			{
-				internalType: "bytes32",
-				name: "s",
-				type: "bytes32"
-			}
-		],
-		name: "ECDSAInvalidSignatureS",
-		type: "error"
 	},
 	{
 		inputs: [
@@ -348,87 +315,6 @@ export const ERC20ABI: any = [
 		type: "error"
 	},
 	{
-		inputs: [
-			{
-				internalType: "uint256",
-				name: "deadline",
-				type: "uint256"
-			}
-		],
-		name: "ERC2612ExpiredSignature",
-		type: "error"
-	},
-	{
-		inputs: [
-			{
-				internalType: "address",
-				name: "signer",
-				type: "address"
-			},
-			{
-				internalType: "address",
-				name: "owner",
-				type: "address"
-			}
-		],
-		name: "ERC2612InvalidSigner",
-		type: "error"
-	},
-	{
-		inputs: [
-			{
-				internalType: "address",
-				name: "account",
-				type: "address"
-			},
-			{
-				internalType: "uint256",
-				name: "currentNonce",
-				type: "uint256"
-			}
-		],
-		name: "InvalidAccountNonce",
-		type: "error"
-	},
-	{
-		inputs: [],
-		name: "InvalidShortString",
-		type: "error"
-	},
-	{
-		inputs: [
-			{
-				internalType: "address",
-				name: "owner",
-				type: "address"
-			}
-		],
-		name: "OwnableInvalidOwner",
-		type: "error"
-	},
-	{
-		inputs: [
-			{
-				internalType: "address",
-				name: "account",
-				type: "address"
-			}
-		],
-		name: "OwnableUnauthorizedAccount",
-		type: "error"
-	},
-	{
-		inputs: [
-			{
-				internalType: "string",
-				name: "str",
-				type: "string"
-			}
-		],
-		name: "StringTooLong",
-		type: "error"
-	},
-	{
 		anonymous: false,
 		inputs: [
 			{
@@ -455,31 +341,6 @@ export const ERC20ABI: any = [
 	},
 	{
 		anonymous: false,
-		inputs: [],
-		name: "EIP712DomainChanged",
-		type: "event"
-	},
-	{
-		anonymous: false,
-		inputs: [
-			{
-				indexed: true,
-				internalType: "address",
-				name: "previousOwner",
-				type: "address"
-			},
-			{
-				indexed: true,
-				internalType: "address",
-				name: "newOwner",
-				type: "address"
-			}
-		],
-		name: "OwnershipTransferred",
-		type: "event"
-	},
-	{
-		anonymous: false,
 		inputs: [
 			{
 				indexed: true,
@@ -502,19 +363,6 @@ export const ERC20ABI: any = [
 		],
 		name: "Transfer",
 		type: "event"
-	},
-	{
-		inputs: [],
-		name: "DOMAIN_SEPARATOR",
-		outputs: [
-			{
-				internalType: "bytes32",
-				name: "",
-				type: "bytes32"
-			}
-		],
-		stateMutability: "view",
-		type: "function"
 	},
 	{
 		inputs: [
@@ -584,37 +432,6 @@ export const ERC20ABI: any = [
 		type: "function"
 	},
 	{
-		inputs: [
-			{
-				internalType: "uint256",
-				name: "value",
-				type: "uint256"
-			}
-		],
-		name: "burn",
-		outputs: [],
-		stateMutability: "nonpayable",
-		type: "function"
-	},
-	{
-		inputs: [
-			{
-				internalType: "address",
-				name: "account",
-				type: "address"
-			},
-			{
-				internalType: "uint256",
-				name: "value",
-				type: "uint256"
-			}
-		],
-		name: "burnFrom",
-		outputs: [],
-		stateMutability: "nonpayable",
-		type: "function"
-	},
-	{
 		inputs: [],
 		name: "decimals",
 		outputs: [
@@ -622,49 +439,6 @@ export const ERC20ABI: any = [
 				internalType: "uint8",
 				name: "",
 				type: "uint8"
-			}
-		],
-		stateMutability: "view",
-		type: "function"
-	},
-	{
-		inputs: [],
-		name: "eip712Domain",
-		outputs: [
-			{
-				internalType: "bytes1",
-				name: "fields",
-				type: "bytes1"
-			},
-			{
-				internalType: "string",
-				name: "name",
-				type: "string"
-			},
-			{
-				internalType: "string",
-				name: "version",
-				type: "string"
-			},
-			{
-				internalType: "uint256",
-				name: "chainId",
-				type: "uint256"
-			},
-			{
-				internalType: "address",
-				name: "verifyingContract",
-				type: "address"
-			},
-			{
-				internalType: "bytes32",
-				name: "salt",
-				type: "bytes32"
-			},
-			{
-				internalType: "uint256[]",
-				name: "extensions",
-				type: "uint256[]"
 			}
 		],
 		stateMutability: "view",
@@ -699,88 +473,6 @@ export const ERC20ABI: any = [
 			}
 		],
 		stateMutability: "view",
-		type: "function"
-	},
-	{
-		inputs: [
-			{
-				internalType: "address",
-				name: "owner",
-				type: "address"
-			}
-		],
-		name: "nonces",
-		outputs: [
-			{
-				internalType: "uint256",
-				name: "",
-				type: "uint256"
-			}
-		],
-		stateMutability: "view",
-		type: "function"
-	},
-	{
-		inputs: [],
-		name: "owner",
-		outputs: [
-			{
-				internalType: "address",
-				name: "",
-				type: "address"
-			}
-		],
-		stateMutability: "view",
-		type: "function"
-	},
-	{
-		inputs: [
-			{
-				internalType: "address",
-				name: "owner",
-				type: "address"
-			},
-			{
-				internalType: "address",
-				name: "spender",
-				type: "address"
-			},
-			{
-				internalType: "uint256",
-				name: "value",
-				type: "uint256"
-			},
-			{
-				internalType: "uint256",
-				name: "deadline",
-				type: "uint256"
-			},
-			{
-				internalType: "uint8",
-				name: "v",
-				type: "uint8"
-			},
-			{
-				internalType: "bytes32",
-				name: "r",
-				type: "bytes32"
-			},
-			{
-				internalType: "bytes32",
-				name: "s",
-				type: "bytes32"
-			}
-		],
-		name: "permit",
-		outputs: [],
-		stateMutability: "nonpayable",
-		type: "function"
-	},
-	{
-		inputs: [],
-		name: "renounceOwnership",
-		outputs: [],
-		stateMutability: "nonpayable",
 		type: "function"
 	},
 	{
@@ -861,19 +553,6 @@ export const ERC20ABI: any = [
 		],
 		stateMutability: "nonpayable",
 		type: "function"
-	},
-	{
-		inputs: [
-			{
-				internalType: "address",
-				name: "newOwner",
-				type: "address"
-			}
-		],
-		name: "transferOwnership",
-		outputs: [],
-		stateMutability: "nonpayable",
-		type: "function"
 	}
 ];
 
@@ -889,6 +568,11 @@ export const ERC721ABI: any = [
 		],
 		stateMutability: "nonpayable",
 		type: "constructor"
+	},
+	{
+		inputs: [],
+		name: "ERC721EnumerableForbiddenBatchMint",
+		type: "error"
 	},
 	{
 		inputs: [
@@ -999,6 +683,32 @@ export const ERC721ABI: any = [
 				internalType: "address",
 				name: "owner",
 				type: "address"
+			},
+			{
+				internalType: "uint256",
+				name: "index",
+				type: "uint256"
+			}
+		],
+		name: "ERC721OutOfBoundsIndex",
+		type: "error"
+	},
+	{
+		inputs: [],
+		name: "EnforcedPause",
+		type: "error"
+	},
+	{
+		inputs: [],
+		name: "ExpectedPause",
+		type: "error"
+	},
+	{
+		inputs: [
+			{
+				internalType: "address",
+				name: "owner",
+				type: "address"
 			}
 		],
 		name: "OwnableInvalidOwner",
@@ -1069,6 +779,38 @@ export const ERC721ABI: any = [
 		anonymous: false,
 		inputs: [
 			{
+				indexed: false,
+				internalType: "uint256",
+				name: "_fromTokenId",
+				type: "uint256"
+			},
+			{
+				indexed: false,
+				internalType: "uint256",
+				name: "_toTokenId",
+				type: "uint256"
+			}
+		],
+		name: "BatchMetadataUpdate",
+		type: "event"
+	},
+	{
+		anonymous: false,
+		inputs: [
+			{
+				indexed: false,
+				internalType: "uint256",
+				name: "_tokenId",
+				type: "uint256"
+			}
+		],
+		name: "MetadataUpdate",
+		type: "event"
+	},
+	{
+		anonymous: false,
+		inputs: [
+			{
 				indexed: true,
 				internalType: "address",
 				name: "previousOwner",
@@ -1082,6 +824,19 @@ export const ERC721ABI: any = [
 			}
 		],
 		name: "OwnershipTransferred",
+		type: "event"
+	},
+	{
+		anonymous: false,
+		inputs: [
+			{
+				indexed: false,
+				internalType: "address",
+				name: "account",
+				type: "address"
+			}
+		],
+		name: "Paused",
 		type: "event"
 	},
 	{
@@ -1107,6 +862,19 @@ export const ERC721ABI: any = [
 			}
 		],
 		name: "Transfer",
+		type: "event"
+	},
+	{
+		anonymous: false,
+		inputs: [
+			{
+				indexed: false,
+				internalType: "address",
+				name: "account",
+				type: "address"
+			}
+		],
+		name: "Unpaused",
 		type: "event"
 	},
 	{
@@ -1249,6 +1017,26 @@ export const ERC721ABI: any = [
 	},
 	{
 		inputs: [],
+		name: "pause",
+		outputs: [],
+		stateMutability: "nonpayable",
+		type: "function"
+	},
+	{
+		inputs: [],
+		name: "paused",
+		outputs: [
+			{
+				internalType: "bool",
+				name: "",
+				type: "bool"
+			}
+		],
+		stateMutability: "view",
+		type: "function"
+	},
+	{
+		inputs: [],
 		name: "renounceOwnership",
 		outputs: [],
 		stateMutability: "nonpayable",
@@ -1262,9 +1050,27 @@ export const ERC721ABI: any = [
 				type: "address"
 			},
 			{
-				internalType: "uint256",
-				name: "tokenId",
-				type: "uint256"
+				internalType: "string[]",
+				name: "uri",
+				type: "string[]"
+			}
+		],
+		name: "safeBatchMint",
+		outputs: [],
+		stateMutability: "nonpayable",
+		type: "function"
+	},
+	{
+		inputs: [
+			{
+				internalType: "address",
+				name: "to",
+				type: "address"
+			},
+			{
+				internalType: "string",
+				name: "uri",
+				type: "string"
 			}
 		],
 		name: "safeMint",
@@ -1377,6 +1183,49 @@ export const ERC721ABI: any = [
 		inputs: [
 			{
 				internalType: "uint256",
+				name: "index",
+				type: "uint256"
+			}
+		],
+		name: "tokenByIndex",
+		outputs: [
+			{
+				internalType: "uint256",
+				name: "",
+				type: "uint256"
+			}
+		],
+		stateMutability: "view",
+		type: "function"
+	},
+	{
+		inputs: [
+			{
+				internalType: "address",
+				name: "owner",
+				type: "address"
+			},
+			{
+				internalType: "uint256",
+				name: "index",
+				type: "uint256"
+			}
+		],
+		name: "tokenOfOwnerByIndex",
+		outputs: [
+			{
+				internalType: "uint256",
+				name: "",
+				type: "uint256"
+			}
+		],
+		stateMutability: "view",
+		type: "function"
+	},
+	{
+		inputs: [
+			{
+				internalType: "uint256",
 				name: "tokenId",
 				type: "uint256"
 			}
@@ -1387,6 +1236,19 @@ export const ERC721ABI: any = [
 				internalType: "string",
 				name: "",
 				type: "string"
+			}
+		],
+		stateMutability: "view",
+		type: "function"
+	},
+	{
+		inputs: [],
+		name: "totalSupply",
+		outputs: [
+			{
+				internalType: "uint256",
+				name: "",
+				type: "uint256"
 			}
 		],
 		stateMutability: "view",
@@ -1427,5 +1289,12 @@ export const ERC721ABI: any = [
 		outputs: [],
 		stateMutability: "nonpayable",
 		type: "function"
+	},
+	{
+		inputs: [],
+		name: "unpause",
+		outputs: [],
+		stateMutability: "nonpayable",
+		type: "function"
 	}
-];
+]

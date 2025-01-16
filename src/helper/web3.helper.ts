@@ -90,7 +90,7 @@ class Web3Helper {
 		}
 	}
 
-	getEventValue(methodSignature: string, contractType: string, inputData: string | null | undefined) {
+	getEventValue(methodSignature: string, contractType: string) {
 		try {
 			const abi = contractType === CONTRACT_TYPE.ERC20 ? ERC20ABI : ERC721ABI;
 			// Find the matching method

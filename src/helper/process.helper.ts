@@ -506,7 +506,7 @@ class ProcessHelper {
 
 			let method = methodSignature;
 			if (contractType.type !== CONTRACT_TYPE.UNKNOWN) {
-				method = Web3Helper.getEventValue(methodSignature, contractType.type, tx?.input);
+				method = Web3Helper.getEventValue(methodSignature, contractType.type);
 			}
 			
 			if (tx?.logs?.length) {
