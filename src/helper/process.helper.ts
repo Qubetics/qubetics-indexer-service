@@ -164,7 +164,6 @@ class ProcessHelper {
 			const _txns = { contractDeployment: 0, coin: 0 };
 			console.log('transactions................', transactions);
 
-
 			/* eslint-disable no-restricted-syntax */
 			/* eslint-disable no-await-in-loop */
 			for (let i = 0; i < transactions.length; i += 1) {
@@ -298,7 +297,7 @@ class ProcessHelper {
 					txnCount: Number(
 						(Number(transactions.gas) *
 							Number(transactions.gasPrice)) /
-						1e18,
+							1e18,
 					),
 				}),
 			);
@@ -506,12 +505,15 @@ class ProcessHelper {
 
 			let method = methodSignature;
 			if (contractType.type !== CONTRACT_TYPE.UNKNOWN) {
-				method = Web3Helper.getEventValue(methodSignature, contractType.type);
+				method = Web3Helper.getEventValue(
+					methodSignature,
+					contractType.type,
+				);
 			}
-			
+
 			if (tx?.logs?.length) {
 				for (let i = 0; i < tx?.logs?.length; i += 1) {
-					const topics = tx?.logs[i].topics;					
+					const topics = tx?.logs[i].topics;
 					const fromAddress =
 						Web3SocketHelper.web3Ws.utils.toChecksumAddress(
 							`0x${topics[1].substring(26, topics[1].length)}`,
@@ -522,7 +524,6 @@ class ProcessHelper {
 							`0x${topics[2].substring(26, topics[2].length)}`,
 						);
 
-					
 					// let method: string = (await explorerHelper.getEventValue(
 					// 	methodSignature,
 					// )) as string;
@@ -612,7 +613,6 @@ class ProcessHelper {
 						totalSupply: noExponent(totalSupply),
 					});
 
-
 					if (logsRes?.error || fromRes?.error || toRes?.error)
 						throw new Error(
 							'Error while saving contract execution details',
@@ -654,7 +654,6 @@ class ProcessHelper {
 		};
 
 		console.log('transaction,,,,,,,', tx);
-
 
 		const coinTxRes = await explorerHelper.coinTransferTxSave(copiedObject);
 		return coinTxRes;

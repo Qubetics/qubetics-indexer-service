@@ -1,3 +1,5 @@
+/* eslint-disable array-callback-return */
+/* eslint-disable consistent-return */
 import Web3 from 'web3';
 import { ERC20ABI, ERC721ABI } from '../constant/abi';
 import { CONTRACT_TYPE, ERROR_MSG } from '../constant/response';
@@ -92,13 +94,18 @@ class Web3Helper {
 
 	getEventValue(methodSignature: string, contractType: string) {
 		try {
-			const abi = contractType === CONTRACT_TYPE.ERC20 ? ERC20ABI : ERC721ABI;
+			const abi =
+				contractType === CONTRACT_TYPE.ERC20 ? ERC20ABI : ERC721ABI;
 			// Find the matching method
 			const method = abi.find((item: any) => {
 				if (item.type === 'function' || item.type === 'event') {
 					const signature = this.web3.utils
-						.sha3(`${item.name}(${item.inputs.map((input: any) => input.type).join(',')})`)
-						?.slice(0, 10); // First 4 bytes						
+						.sha3(
+							`${item.name}(${item.inputs
+								.map((input: any) => input.type)
+								.join(',')})`,
+						)
+						?.slice(0, 10); // First 4 bytes
 					return signature === methodSignature;
 				}
 			});
