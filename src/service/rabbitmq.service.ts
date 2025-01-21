@@ -112,19 +112,23 @@ class RabbitMq {
 			QUEUE_NAME.TRANSACTIONS,
 			async (message: amqp.Message | null) => {
 				if (message) {
-					const txData = JSON.parse(message.content.toString());
-					const txRes =
-						await processHelper.processTransactions(txData);
+					try {
+						const txData = JSON.parse(message.content.toString());
+						const txRes =
+							await processHelper.processTransactions(txData);
 
-					if (txRes.error) {
-						this.enqueueData(
-							QUEUE_NAME.ERROR_BLOCK,
-							txData.blocknumber.toString(),
-						);
+						if (txRes.error) {
+							this.enqueueData(
+								QUEUE_NAME.ERROR_BLOCK,
+								txData.blocknumber.toString(),
+							);
+						}
+						console.log('acknowledging the queue for tx ..');
+						this.channel?.ack(message);
+					} catch (error) {
+						console.log('consumeAllTransaction Error', error);
+						this.channel?.ack(message);
 					}
-					console.log('acknowledging the queue for tx ..');
-
-					this.channel?.ack(message);
 				}
 			},
 			{ noAck: false },
@@ -139,10 +143,15 @@ class RabbitMq {
 			QUEUE_NAME.SAVE_USERS,
 			async (message: amqp.Message | null) => {
 				if (message) {
-					await explorerHelper.userSave(
-						JSON.parse(message.content.toString()),
-					);
-					this.channel?.ack(message);
+					try {
+						await explorerHelper.userSave(
+							JSON.parse(message.content.toString()),
+						);
+						this.channel?.ack(message);
+					} catch (error) {
+						console.log('consumeUsers Error', error);
+						this.channel?.ack(message);
+					}
 				}
 			},
 			{ noAck: false },
@@ -157,18 +166,23 @@ class RabbitMq {
 			QUEUE_NAME.MISSING_BLOCK,
 			async (message: amqp.Message | null) => {
 				if (message) {
-					const blockNumber = Number(message.content.toString());
-					const isSuccess =
-						await processHelper.saveDowntimeAndErrBlock(
-							blockNumber,
-						);
-					if (!isSuccess && blockNumber) {
-						this.enqueueData(
-							QUEUE_NAME.ERROR_BLOCK,
-							blockNumber.toString(),
-						);
+					try {
+						const blockNumber = Number(message.content.toString());
+						const isSuccess =
+							await processHelper.saveDowntimeAndErrBlock(
+								blockNumber,
+							);
+						if (!isSuccess && blockNumber) {
+							this.enqueueData(
+								QUEUE_NAME.ERROR_BLOCK,
+								blockNumber.toString(),
+							);
+						}
+						this.channel?.ack(message);
+					} catch (error) {
+						console.log('consumeMissingBlocks Error', error);
+						this.channel?.ack(message);
 					}
-					this.channel?.ack(message);
 				}
 			},
 			{ noAck: false },
@@ -183,11 +197,17 @@ class RabbitMq {
 			QUEUE_NAME.VALIDATOR_DETAIL,
 			async (message: amqp.Message | null) => {
 				if (message) {
-					const validatorString = message.content.toString();
-					const validator: IValidator = JSON.parse(validatorString);
-					await explorerHelper.saveValidatorData(validator);
+					try {
+						const validatorString = message.content.toString();
+						const validator: IValidator =
+							JSON.parse(validatorString);
+						await explorerHelper.saveValidatorData(validator);
 
-					this.channel?.ack(message);
+						this.channel?.ack(message);
+					} catch (error) {
+						console.log('consumeValidatorDetails Error', error);
+						this.channel?.ack(message);
+					}
 				}
 			},
 			{ noAck: false },
@@ -202,16 +222,16 @@ class RabbitMq {
 			QUEUE_NAME.ERROR_BLOCK,
 			async (message: amqp.Message | null) => {
 				if (message) {
-					const blockNumber = Number(message.content.toString());
-
-					await processHelper.saveDowntimeAndErrBlock(blockNumber);
-					// if (!isSuccess) {
-					// 	this.enqueueData(
-					// 		QUEUE_NAME.ERROR_BLOCK,
-					// 		blockNumber.toString(),
-					// 	);
-					// }
-					this.channel?.ack(message);
+					try {
+						const blockNumber = Number(message.content.toString());
+						await processHelper.saveDowntimeAndErrBlock(
+							blockNumber,
+						);
+						this.channel?.ack(message);
+					} catch (error) {
+						console.log('consumeErrorBlocks Error', error);
+						this.channel?.ack(message);
+					}
 				}
 			},
 			{ noAck: false },
@@ -226,59 +246,12 @@ class RabbitMq {
 			QUEUE_NAME.DOWNTIME_BLOCK,
 			async (message: amqp.Message | null) => {
 				if (message) {
-					const blockNumber = Number(message.content.toString());
-					const isSuccess =
-						await processHelper.saveDowntimeAndErrBlock(
-							blockNumber,
-						);
-					if (isSuccess) {
-						// Retrieve the block count from Redis or the database
-						let blockCount = await RedisService.getString(
-							REDIS_KEY.BLOCKS_COUNT,
-						);
-
-						if (!blockCount) {
-							// First time, get the count from the database
-							blockCount = await prisma.blocks.count();
-							await RedisService.setString(
-								REDIS_KEY.BLOCKS_COUNT,
-								blockCount,
-							);
-						} else {
-							// Increment the block count
-							blockCount = Number(blockCount) + 1;
-							await RedisService.setString(
-								REDIS_KEY.BLOCKS_COUNT,
-								blockCount,
-							);
-						}
-					}
-					console.log('Downtime Block (Saved): ', blockNumber);
-					if (!isSuccess) {
-						this.enqueueData(
-							QUEUE_NAME.ERROR_BLOCK,
-							blockNumber.toString(),
-						);
-					}
-					this.channel?.ack(message);
-				}
-			},
-			{ noAck: false },
-		);
-	}
-
-	public consumeBlocks(): void {
-		for (let i = 0; i < 10; i += 1) {
-			this.channel?.consume(
-				`${QUEUE_NAME.BLOCKS}_${i}`,
-				async (message: amqp.Message | null) => {
-					if (message) {
-						const blockData = JSON.parse(
-							message.content.toString(),
-						);
+					try {
+						const blockNumber = Number(message.content.toString());
 						const isSuccess =
-							await explorerHelper.saveBlockData(blockData);
-
+							await processHelper.saveDowntimeAndErrBlock(
+								blockNumber,
+							);
 						if (isSuccess) {
 							// Retrieve the block count from Redis or the database
 							let blockCount = await RedisService.getString(
@@ -301,13 +274,70 @@ class RabbitMq {
 								);
 							}
 						}
-						if (isSuccess?.error && blockData?.blocknumber) {
+						console.log('Downtime Block (Saved): ', blockNumber);
+						if (!isSuccess) {
 							this.enqueueData(
 								QUEUE_NAME.ERROR_BLOCK,
-								blockData.blocknumber.toString(),
+								blockNumber.toString(),
 							);
 						}
 						this.channel?.ack(message);
+					} catch (error) {
+						console.log('consumeDownTimeBlocks Error', error);
+						this.channel?.ack(message);
+					}
+				}
+			},
+			{ noAck: false },
+		);
+	}
+
+	public consumeBlocks(): void {
+		for (let i = 0; i < 10; i += 1) {
+			this.channel?.consume(
+				`${QUEUE_NAME.BLOCKS}_${i}`,
+				async (message: amqp.Message | null) => {
+					if (message) {
+						try {
+							const blockData = JSON.parse(
+								message.content.toString(),
+							);
+							const isSuccess =
+								await explorerHelper.saveBlockData(blockData);
+
+							if (isSuccess) {
+								// Retrieve the block count from Redis or the database
+								let blockCount = await RedisService.getString(
+									REDIS_KEY.BLOCKS_COUNT,
+								);
+
+								if (!blockCount) {
+									// First time, get the count from the database
+									blockCount = await prisma.blocks.count();
+									await RedisService.setString(
+										REDIS_KEY.BLOCKS_COUNT,
+										blockCount,
+									);
+								} else {
+									// Increment the block count
+									blockCount = Number(blockCount) + 1;
+									await RedisService.setString(
+										REDIS_KEY.BLOCKS_COUNT,
+										blockCount,
+									);
+								}
+							}
+							if (isSuccess?.error && blockData?.blocknumber) {
+								this.enqueueData(
+									QUEUE_NAME.ERROR_BLOCK,
+									blockData.blocknumber.toString(),
+								);
+							}
+							this.channel?.ack(message);
+						} catch (error) {
+							console.log('consumeBlocks Error', error);
+							this.channel?.ack(message);
+						}
 					}
 				},
 				{ noAck: false },
@@ -320,15 +350,20 @@ class RabbitMq {
 			QUEUE_NAME.STATS_UPDATE,
 			(msg: amqp.Message | null) => {
 				if (!msg) return;
-				const message: StatsType = JSON.parse(
-					msg.content.toString('utf-8'),
-				);
-				// update the latest count for data tables
-				countHelper.updateLatestCount(message);
+				try {
+					const message: StatsType = JSON.parse(
+						msg.content.toString('utf-8'),
+					);
+					// update the latest count for data tables
+					countHelper.updateLatestCount(message);
 
-				// update the stats
-				if (!statsUpdater.updateInMemoryStats(message))
+					// update the stats
+					if (!statsUpdater.updateInMemoryStats(message))
+						this.channel.ack(msg);
+				} catch (error) {
+					console.log('consumeStats Error', error);
 					this.channel.ack(msg);
+				}
 			},
 		);
 	};

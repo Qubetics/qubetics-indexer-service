@@ -108,6 +108,7 @@ class Web3Helper {
 						?.slice(0, 10); // First 4 bytes
 					return signature === methodSignature;
 				}
+				return false;
 			});
 			return method ? method.name : methodSignature;
 		} catch (err) {
