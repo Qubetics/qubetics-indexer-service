@@ -92,15 +92,21 @@ class Web3Helper {
 
 	getEventValue(methodSignature: string, contractType: string) {
 		try {
-			const abi = contractType === CONTRACT_TYPE.ERC20 ? ERC20ABI : ERC721ABI;
+			const abi =
+				contractType === CONTRACT_TYPE.ERC20 ? ERC20ABI : ERC721ABI;
 			// Find the matching method
 			const method = abi.find((item: any) => {
 				if (item.type === 'function' || item.type === 'event') {
 					const signature = this.web3.utils
-						.sha3(`${item.name}(${item.inputs.map((input: any) => input.type).join(',')})`)
-						?.slice(0, 10); // First 4 bytes						
+						.sha3(
+							`${item.name}(${item.inputs
+								.map((input: any) => input.type)
+								.join(',')})`,
+						)
+						?.slice(0, 10); // First 4 bytes
 					return signature === methodSignature;
 				}
+				return false;
 			});
 			return method ? method.name : methodSignature;
 		} catch (err) {
