@@ -1,4 +1,4 @@
-name: '[testnet] Deploy explorer frontend'
+name: '[testnet] Deploy qubetics indexer'
 
 on: 
   push:
@@ -6,8 +6,8 @@ on:
       - testnet
 
 jobs:
-  testnet_deploy_explorer_frontend:
-    uses: ./.github/workflows/testnet-frontend.yaml
+  deploy_qubetics_indexer:
+    uses: ./.github/workflows/qubetics-indexer-service.yml
     with:
       SWR_ORGANIZATION: testnet-qubetics
       ARGOCD_BRANCH: testnet
@@ -16,7 +16,7 @@ jobs:
       DEPLOYMENT_PATH: Indexer/indexer-deployment.yaml
       HUAWEI_IMAGE: testnet-qubetics-indexer
       DOCKER_USERNAME: ap-southeast-3@BQG9INQF0BKVHSNQOLJG
-      ENV: ${{ vars.QUBETICS_INDEXER_ENV }}
+      ENV: ${{ vars.TESTNET_QUBETICS_INDEXER_ENV }}
     secrets:
       DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
       GIT_SSH_KEY: ${{ secrets.ARGOCD_SSH_KEY }}
