@@ -1,63 +1,109 @@
-name: Build and Push Docker Image with OIDC
-
+name: Explorer Frontend K8s
 on:
-  push:
-    branches:
-      - master
+  workflow_call:
+    inputs:
+      SWR_ORGANIZATION:
+        description: 'The Huawei SWR repository name used for pushing images to the Dev or production SWR'
+        required: true
+        type: string
+      HUAWEI_REGION:
+        description: 'huawei region'
+        required: true
+        type: string
+      ARGOCD_BRANCH:
+        description: 'ArgoCD branch for cloning based on environment (uat or prod)'
+        required: true
+        type: string
+      ARGOCD_REPOSITORY:
+        description: 'ArgoCD branch for cloning based on environment (uat or prod)'
+        required: true
+        type: string
+      ENV: 
+        description: 'ENV to use while deploying frontend'
+        required: true
+        type: string
+      DEPLOYMENT_PATH:
+        description: 'ENV to use while deploying frontend'
+        required: true
+        type: string
+      
+      HUAWEI_IMAGE:
+        description: 'ENV to use while deploying frontend'
+        required: true
+        type: string
+      DOCKER_USERNAME:
+        description: 'ENV to use while deploying frontend'
+        required: true
+        type: string
 
+
+    secrets:
+      DOCKER_PASSWORD:
+        description: 'Huawei Cloud password for logging into SWR'
+        required: true
+      GIT_SSH_KEY:
+        description: 'GitHub Actions use a SSH key for cloning the ArgoCD repository.'
+        required: true
+      
 permissions:
-  id-token: write
-  contents: read
+  id-token: write   # This is required for requesting the JWT
+  contents: read    # This is required for actions/checkout
 
 jobs:
-  build:
+  deploy-qubetics-frontend:
     runs-on: ubuntu-latest
-    env:
-      HUAWEI_IMAGE: testnet-qubetics-indexer
-      ARGOCD_REPO: ${{ secrets.ARGOCD_REPO }}
-      DEPLOYMENT_PATH: ${{ secrets.DEPLOYMENT_PATH }}
-      DEPLOY_KEY: ${{ secrets.DEPLOY_KEY }}
-      GIT_USERNAME: ${{ secrets.GIT_USERNAME }}
-      GIT_EMAIL: ${{ secrets.GIT_EMAIL }}
-      BRANCH: ${{ secrets.BRANCH }}
-
+    
+    # permissions: write-all
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v3
+          - name: Check out repository
+            uses: actions/checkout@v3
 
-      - name: Install OIDC Client from Core Package
-        run: npm install @actions/core @actions/http-client
+          - name: Install OIDC Client from Core Package
+            run: npm install @actions/core @actions/http-client  
+              
+          - name: Login to Huawei SWR
+            id: login 
+            run: |
+              docker login -u ${{ inputs.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }} swr.${{ inputs.HUAWEI_REGION }}.myhuaweicloud.com
 
-      - name: Authenticate with Huawei SWR
-        id: login
-        run: |
-           docker login -u ap-southeast-3@BQG9INQF0BKVHSNQOLJG -p e054dff1ba4cc985788f9dc974550f1f55ed81c4841a80038fe0b58765395bc6 swr.ap-southeast-3.myhuaweicloud.com
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
+          - name: Set up Docker Buildx
+            uses: docker/setup-buildx-action@v2    
 
-      - name: Build Docker Image
-        run: |
-          docker build -t swr.ap-southeast-3.myhuaweicloud.com/testnet-qubetics/$HUAWEI_IMAGE:${{ github.run_number }} .
+#############          
+# Build Image
+#############
+          - name: Build, tag, and push docker image to Huawei SWR
+            env:
+              REGISTRY: swr.${{ inputs.HUAWEI_REGION }}.myhuaweicloud.com
+              SWR_ORGANIZATION: ${{ inputs.SWR_ORGANIZATION }}
+              IMAGE_TAG: ${{ github.sha  }}
+              HUAWEI_IMAGE: ${{ inputs.HUAWEI_IMAGE }}
+            run: |
+              echo "${{ inputs.ENV }}" >> .env
+              cat .env
+              docker build --no-cache -t $REGISTRY/$SWR_ORGANIZATION/$HUAWEI_IMAGE:${{ github.run_number }} .
+              docker push $REGISTRY/$SWR_ORGANIZATION/$HUAWEI_IMAGE:${{ github.run_number }}
 
-      - name: Push Docker Image to Huawei SWR
-        run: |
-          docker push swr.ap-southeast-3.myhuaweicloud.com/testnet-qubetics/$HUAWEI_IMAGE:${{ github.run_number }}
-
-      - name: Configure Deploy Key
-        run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.DEPLOY_KEY }}" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan github.com >> ~/.ssh/known_hosts
-
-      - name: Update ArgoCD Deployment
-        run: |
-          git clone $ARGOCD_REPO
-          cd $(basename $ARGOCD_REPO .git)
-          git checkout $BRANCH
-          sed -i "s|\(image: \).*|\1swr.ap-southeast-3.myhuaweicloud.com/testnet-qubetics/$HUAWEI_IMAGE:${{ github.run_number }}|" $DEPLOYMENT_PATH
-          git config user.name "$GIT_USERNAME"
-          git config user.email "$GIT_EMAIL"
-          git add .
-          git commit -m "Update image to swr.ap-southeast-3.myhuaweicloud.com/testnet-qubetics/$HUAWEI_IMAGE:${{ github.run_number }}"
-          git push origin $BRANCH
+################         
+# Update argocd
+################
+          - name: "Update image tag in argocd repository"
+            uses: actions/checkout@v4
+            with:
+              repository: ${{ inputs.ARGOCD_REPOSITORY }}
+              ref: ${{ inputs.ARGOCD_BRANCH }}
+              ssh-key: ${{ secrets.GIT_SSH_KEY }}
+            env:
+              SWR_ORGANIZATION: ${{ inputs.SWR_ORGANIZATION }}
+              HUAWEI_IMAGE: ${{ inputs.HUAWEI_IMAGE }}
+              DEPLOYMENT_PATH: ${{ inputs.DEPLOYMENT_PATH }}
+          - run: |
+              ls
+              echo $DEPLOYMENT_PATH
+              echo $HUAWEI_IMAGE
+              git config user.name github-actions
+              git config user.email github-actions@github.com 
+              sed -i "s|\(image: \).*|\1swr.${{ inputs.HUAWEI_REGION }}.myhuaweicloud.com/${{ inputs.SWR_ORGANIZATION }}/${{ inputs.HUAWEI_IMAGE }}:${{ github.run_number }}|" ${{ inputs.DEPLOYMENT_PATH }}
+              git add .
+              git commit -m "Update image to swr.${{ inputs.HUAWEI_REGION }}.myhuaweicloud.com/${{ inputs.SWR_ORGANIZATION }}/${{ inputs.HUAWEI_IMAGE }}:${{ github.run_number }}"
+              git push origin
