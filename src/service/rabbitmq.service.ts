@@ -99,7 +99,10 @@ class RabbitMq {
 			this.channel?.sendToQueue(queue, Buffer.from(data));
 			return true;
 		} catch (error) {
-			logger.error('Error while enqueuing data into queue: ', error);
+			logger.error(
+				`Error while enqueuing data into queue name: ${queue}`,
+				error,
+			);
 			return false;
 		}
 	}
