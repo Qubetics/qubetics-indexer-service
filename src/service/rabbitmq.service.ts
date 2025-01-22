@@ -32,14 +32,7 @@ class RabbitMq {
 				});
 			}
 			this.channel.prefetch(5);
-			this.consumeBlocks();
-			this.consumeUsers();
-			this.consumeAllTransaction();
-			this.consumeMissingBlocks();
-			this.consumeDownTimeBlocks();
-			this.consumeErrorBlocks();
-			this.consumeValidatorDetails();
-			this.consumeStats();
+			this.startConsumers();
 
 			return true;
 		} catch (error) {
@@ -48,36 +41,65 @@ class RabbitMq {
 		}
 	}
 
+	public startConsumers() {
+		this.consumeBlocks();
+		this.consumeUsers();
+		this.consumeAllTransaction();
+		this.consumeMissingBlocks();
+		this.consumeDownTimeBlocks();
+		this.consumeErrorBlocks();
+		this.consumeValidatorDetails();
+		this.consumeStats();
+		// this.consumeMissingMissingMethods();
+	}
+
 	public connect(): Promise<amqp.Channel> {
 		const RECONNECT_DELAY = 5000;
+		const connectionOptions = {
+			heartbeat: 60, // heartbeat interval in seconds
+		};
 		return new Promise((resolve, reject) => {
-			const attemptConnection = () => {
-				amqp.connect(environment.rabbitMq, (err, connection) => {
-					if (err) {
-						console.error('Error connecting to RabbitMQ:', err);
-						reject(err);
-						return;
-					}
-
-					connection.on('error', (error) => {
-						console.error(
-							'RabbitMQ connection error:',
-							error.message,
-						);
-						setTimeout(attemptConnection, RECONNECT_DELAY);
-					});
-
-					connection.createChannel((error: Error, channel) => {
-						if (error) {
-							console.error('Error creating channel:', error);
-							reject(error);
+			const attemptConnection = (reConsume: boolean = false) => {
+				amqp.connect(
+					environment.rabbitMq,
+					connectionOptions,
+					(err, connection) => {
+						if (err) {
+							logger.error('Error connecting to RabbitMQ:', err);
+							reject(err);
 							return;
 						}
 
-						logger.info('RabbitMQ connection created');
-						resolve(channel);
-					});
-				});
+						connection.on('error', (error) => {
+							logger.error('RabbitMQ connection error:', error);
+							setTimeout(
+								() => attemptConnection(true),
+								RECONNECT_DELAY,
+							);
+						});
+
+						connection.on('close', (error) => {
+							console.log('RabbitMQ Closing error:', error);
+							setTimeout(
+								() => attemptConnection(true),
+								RECONNECT_DELAY,
+							);
+						});
+						connection.createChannel((error: Error, channel) => {
+							if (error) {
+								logger.error('Error creating channel:', error);
+								reject(error);
+								return;
+							}
+							this.channel = channel;
+							if (reConsume) {
+								this.startConsumers();
+							}
+							logger.info('RabbitMQ connected successfully');
+							resolve(channel);
+						});
+					},
+				);
 			};
 
 			attemptConnection();
@@ -205,7 +227,6 @@ class RabbitMq {
 						const validator: IValidator =
 							JSON.parse(validatorString);
 						await explorerHelper.saveValidatorData(validator);
-
 						this.channel?.ack(message);
 					} catch (error) {
 						console.log('consumeValidatorDetails Error', error);
