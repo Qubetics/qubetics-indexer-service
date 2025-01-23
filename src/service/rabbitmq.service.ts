@@ -114,7 +114,7 @@ class RabbitMq {
 											() => attemptConnection(true),
 											RECONNECT_DELAY,
 										);
-										setTimeout(createChannel, 1000);
+										// setTimeout(createChannel, 1000);
 									});
 
 									// Handle channel closure and recreate it
@@ -127,7 +127,7 @@ class RabbitMq {
 											() => attemptConnection(true),
 											RECONNECT_DELAY,
 										);
-										setTimeout(createChannel, 1000);
+										// setTimeout(createChannel, 1000);
 									});
 
 									channel.on('return', (msg) => {
@@ -139,7 +139,7 @@ class RabbitMq {
 											() => attemptConnection(true),
 											RECONNECT_DELAY,
 										);
-										setTimeout(createChannel, 1000);
+										// setTimeout(createChannel, 1000);
 									});
 
 									// Re-consume messages if necessary
