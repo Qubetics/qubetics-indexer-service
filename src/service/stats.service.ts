@@ -45,6 +45,7 @@ class Stats {
 			let startDate = '';
 
 			const currentDate = new Date();
+			const getCurrentDate = await formatTheDate(currentDate);
 
 			const oneDayAgo = new Date();
 			oneDayAgo.setDate(oneDayAgo.getDate() - 1);
@@ -68,12 +69,13 @@ class Stats {
 			const fromDate = new Date(currentDate);
 			fromDate.setDate(fromDate.getDate() - daysAgo);
 			startDate = formatDateForDay(fromDate);
+			const fromMonth = await formatTheDate(fromDate);
 
 			graphData = (await prisma.$queryRaw`
 			  SELECT DATE_TRUNC('day', "timestamp") AS "day", COUNT(*)::int AS "count"
 			  FROM "Transactions"
-			  WHERE "timestamp" >= ${new Date(startDate)}
-				AND "timestamp" <= ${currentDate}
+			  WHERE "timestamp" >= ${fromMonth}::timestamp
+				AND "timestamp" <= ${getCurrentDate}::timestamp
 				
 			  GROUP BY "day"
 			  ORDER BY "day";
