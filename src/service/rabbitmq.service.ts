@@ -456,7 +456,6 @@ class RabbitMq {
 								console.log('2-isSuccess');
 
 								this.channel?.ack(message);
-								
 							} catch (error) {
 								console.log('consumeBlocks Error', error);
 								this.channel?.ack(message);
