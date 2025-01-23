@@ -45,7 +45,7 @@ class ExlorerHelper {
 				data: { isAdded: true },
 			};
 		} catch (err: any) {
-			console.log(err.message);
+			console.log(err.message, 'saveBlockData Error');
 			const error = JSON.parse(JSON.stringify(err));
 			if (error.code === 'P2002') {
 				return {

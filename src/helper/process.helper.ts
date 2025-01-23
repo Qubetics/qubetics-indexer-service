@@ -94,10 +94,7 @@ class ProcessHelper {
 				blockno,
 				true,
 			);
-			// console.log('blockFROM', block);
 			const transactions = block?.transactions || [];
-
-			// const {block, transactions } = await this.getBlockDetails(blockno);
 			const transactionsArr = [];
 
 			const blockExtractedData = {
@@ -122,8 +119,6 @@ class ProcessHelper {
 				timestamp: new Date(Number(block?.timestamp) * 1000),
 			};
 
-			// console.log('blockExtractedData', blockExtractedData);
-			// send stats update (transaction)
 			if (transactions.length)
 				rabbitmqService.enqueueData(
 					QUEUE_NAME.STATS_UPDATE,
@@ -162,20 +157,15 @@ class ProcessHelper {
 
 			// contract and coin transafer transactions
 			const _txns = { contractDeployment: 0, coin: 0 };
-			console.log('transactions................', transactions);
-
-			/* eslint-disable no-restricted-syntax */
+			console.log('XtransactionsX', transactions, 'The _txns', _txns);
 			/* eslint-disable no-await-in-loop */
-			for (let i = 0; i < transactions.length; i += 1) {
-				const gasPrice = Number(
-					transactions[i]?.gasPrice || CONST_NAME.ZERO,
-				);
-				const gas = transactions[i]?.gas || CONST_NAME.ZERO;
+			// Disable the rule for the next line
+			// eslint-disable-next-line no-restricted-syntax
+			for (const element of transactions) {
+				const gasPrice = Number(element?.gasPrice || CONST_NAME.ZERO);
+				const gas = element?.gas || CONST_NAME.ZERO;
 				const txFee = (gas * gasPrice) / CONST_NAME.POWER;
-				const txnType = txType(
-					`${transactions[i].to}`,
-					transactions[i].input,
-				);
+				const txnType = txType(`${element.to}`, element.input);
 
 				if (txnType === TRANSACTION_TYPE.COIN_TRANSFER) _txns.coin++;
 				else if (txnType === TRANSACTION_TYPE.CONTRACT_CREATION)
@@ -188,24 +178,22 @@ class ProcessHelper {
 					createdAt: new Date(),
 					txFee: exp(`${txFee}`),
 					blockhash: block?.hash,
-					input: transactions[i].input,
-					txhash: transactions[i]?.hash,
+					input: element.input,
+					txhash: element?.hash,
 					contractAddress: CONST_NAME.NA,
 					timestamp: new Date(Number(block?.timestamp) * 1000),
 					blocknumber: Number(block.number),
 					token: CONST_NAME.ZERO.toString(),
-					fromAddress: transactions[i]?.from,
+					fromAddress: element?.from,
 					status: TRANSACTION_STATUS.PENDING,
-					toAddress: transactions[i]?.to || CONST_NAME.NA,
+					toAddress: element?.to || CONST_NAME.NA,
 					type: txnType,
-					value: exp(
-						`${Number(transactions[i]?.value) / CONST_NAME.POWER}`,
-					),
+					value: exp(`${Number(element?.value) / CONST_NAME.POWER}`),
 				};
 
 				const txReceipt =
 					await Web3SocketHelper.web3Ws.eth.getTransactionReceipt(
-						transactions[i].hash,
+						element.hash,
 					);
 
 				if (txReceipt) {
@@ -711,8 +699,9 @@ class ProcessHelper {
 				await explorerHelper.saveBlockData(res.block);
 				return true;
 			}
-			throw new Error('');
+			return false;
 		} catch (error) {
+			console.log('saveDowntimeAndErrBlock Error', error);
 			return false;
 		}
 	}
