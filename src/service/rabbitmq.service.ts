@@ -18,7 +18,7 @@ class RabbitMq {
 
 	public async startServer() {
 		try {
-			const res = await this.connect();
+			const res = await this.connect(); // Ensure `connect` is awaited if it's a Promise
 			this.channel = res;
 			Object.values(QUEUE_NAME).forEach((queue) => {
 				this.channel.assertQueue(queue, {
@@ -26,17 +26,19 @@ class RabbitMq {
 				});
 			});
 
+			// Assert additional BLOCKS_* queues
 			for (let i = 0; i < 10; i += 1) {
 				this.channel.assertQueue(`${QUEUE_NAME.BLOCKS}_${i}`, {
-					durable: false,
+					durable: false, // Set to true for persistent queues
 				});
 			}
 			this.channel.prefetch(5);
 			this.startConsumers();
 
+			console.log('RabbitMQ server started successfully!');
 			return true;
 		} catch (error) {
-			console.error('Error while connecting to RabbitMQ: ', error);
+			console.error('Error while connecting to RabbitMQ:', error);
 			return false;
 		}
 	}
@@ -55,9 +57,8 @@ class RabbitMq {
 
 	public connect(): Promise<amqp.Channel> {
 		const RECONNECT_DELAY = 5000;
-		const connectionOptions = {
-			heartbeat: 60, // heartbeat interval in seconds
-		};
+		const connectionOptions = { heartbeat: 60 }; // Heartbeat interval in seconds
+
 		return new Promise((resolve, reject) => {
 			const attemptConnection = (reConsume: boolean = false) => {
 				amqp.connect(
@@ -70,6 +71,7 @@ class RabbitMq {
 							return;
 						}
 
+						// Handle connection errors
 						connection.on('error', (error) => {
 							logger.error('RabbitMQ connection error:', error);
 							setTimeout(
@@ -78,26 +80,64 @@ class RabbitMq {
 							);
 						});
 
+						// Handle connection closure
 						connection.on('close', (error) => {
-							console.log('RabbitMQ Closing error:', error);
+							logger.warn('RabbitMQ connection closed:', error);
 							setTimeout(
 								() => attemptConnection(true),
 								RECONNECT_DELAY,
 							);
 						});
-						connection.createChannel((error: Error, channel) => {
-							if (error) {
-								logger.error('Error creating channel:', error);
-								reject(error);
-								return;
-							}
-							this.channel = channel;
-							if (reConsume) {
-								this.startConsumers();
-							}
-							logger.info('RabbitMQ connected successfully');
-							resolve(channel);
-						});
+
+						// Function to create and handle channel
+						const createChannel = () => {
+							connection.createChannel(
+								(error: Error, channel) => {
+									if (error) {
+										logger.error(
+											'Error creating channel:',
+											error,
+										);
+										reject(error);
+										return;
+									}
+
+									this.channel = channel;
+
+									// Handle channel errors
+									channel.on('error', (chanError) => {
+										logger.error(
+											'RabbitMQ channel error:',
+											chanError,
+										);
+									});
+
+									// Handle channel closure and recreate it
+									channel.on('close', () => {
+										logger.warn(
+											'RabbitMQ channel closed, recreating...',
+										);
+										setTimeout(
+											createChannel,
+											RECONNECT_DELAY,
+										);
+									});
+
+									// Re-consume messages if necessary
+									if (reConsume) {
+										this.startConsumers();
+									}
+
+									logger.info(
+										'RabbitMQ channel created successfully',
+									);
+									resolve(channel);
+								},
+							);
+						};
+
+						// Create the initial channel
+						createChannel();
 					},
 				);
 			};
@@ -389,6 +429,7 @@ class RabbitMq {
 					this.channel.ack(msg);
 				}
 			},
+			{ noAck: false },
 		);
 	};
 }
