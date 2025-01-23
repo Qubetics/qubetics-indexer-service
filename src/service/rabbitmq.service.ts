@@ -244,7 +244,7 @@ class RabbitMq {
 				QUEUE_NAME.MISSING_BLOCK,
 				async (message: amqp.Message | null) => {
 					console.log(
-						'consumeErrorBlocks_message',
+						'consumeMissingBlocks_message',
 						message?.content.toString(),
 					);
 
@@ -269,7 +269,7 @@ class RabbitMq {
 							this.channel?.ack(message);
 						}
 					} else {
-						console.log('consumeErrorBlocks_message EKSE');
+						console.log('consumeMissingBlocks_message ELSE');
 					}
 				},
 				{ noAck: false },
@@ -315,7 +315,7 @@ class RabbitMq {
 					message?.content.toString(),
 				);
 
-				if (message) {
+				if (message?.content.toString() !== '0') {
 					try {
 						const blockNumber = Number(message.content.toString());
 						await processHelper.saveDowntimeAndErrBlock(
