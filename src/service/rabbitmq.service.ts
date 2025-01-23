@@ -56,7 +56,7 @@ class RabbitMq {
 	}
 
 	public connect(): Promise<amqp.Channel> {
-		const RECONNECT_DELAY = 5000;
+		const RECONNECT_DELAY = 3000;
 		const connectionOptions = { heartbeat: 30 }; // Heartbeat interval in seconds
 
 		return new Promise((resolve, reject) => {
@@ -110,6 +110,7 @@ class RabbitMq {
 											'RabbitMQ channel error:',
 											chanError,
 										);
+										setTimeout(createChannel, 1000);
 									});
 
 									// Handle channel closure and recreate it
