@@ -110,6 +110,10 @@ class RabbitMq {
 											'RabbitMQ channel error:',
 											chanError,
 										);
+										setTimeout(
+											() => attemptConnection(true),
+											RECONNECT_DELAY,
+										);
 										setTimeout(createChannel, 1000);
 									});
 
@@ -119,6 +123,10 @@ class RabbitMq {
 											'RabbitMQ channel closed, recreating...',
 											channelError,
 										);
+										setTimeout(
+											() => attemptConnection(true),
+											RECONNECT_DELAY,
+										);
 										setTimeout(createChannel, 1000);
 									});
 
@@ -127,6 +135,11 @@ class RabbitMq {
 											'Message Returned Chnnale:',
 											msg.content.toString(),
 										);
+										setTimeout(
+											() => attemptConnection(true),
+											RECONNECT_DELAY,
+										);
+										setTimeout(createChannel, 1000);
 									});
 
 									// Re-consume messages if necessary
@@ -315,7 +328,7 @@ class RabbitMq {
 					message?.content.toString(),
 				);
 
-				if (message?.content.toString() !== '0') {
+				if (message) {
 					try {
 						const blockNumber = Number(message.content.toString());
 						await processHelper.saveDowntimeAndErrBlock(
