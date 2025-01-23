@@ -118,9 +118,13 @@ class RabbitMq {
 											'RabbitMQ channel closed, recreating...',
 											channelError,
 										);
-										setTimeout(
-											createChannel,
-											RECONNECT_DELAY,
+										setTimeout(createChannel, 1000);
+									});
+
+									channel.on('return', (msg) => {
+										console.error(
+											'Message Returned Chnnale:',
+											msg.content.toString(),
 										);
 									});
 
@@ -385,7 +389,7 @@ class RabbitMq {
 							this.channel?.ack(message);
 						} catch (error) {
 							console.log('consumeDownTimeBlocks Error', error);
-							this.channel?.ack(message);
+							this.channel?.nack(message, false, false); // Do not requeue
 						}
 					} else {
 						console.log('consumeDownTimeBlocks_message ELSE');
@@ -447,7 +451,7 @@ class RabbitMq {
 										isSuccess?.error &&
 										blockData?.blocknumber
 									) {
-										this.enqueueData(
+										await this.enqueueData(
 											QUEUE_NAME.ERROR_BLOCK,
 											blockData.blocknumber.toString(),
 										);
@@ -456,10 +460,10 @@ class RabbitMq {
 									this.channel?.ack(message);
 								} catch (error) {
 									console.log('consumeBlocks Error', error);
-									this.channel?.nack(message);
+									this.channel?.nack(message, false, false); // Do not requeue
 								}
 							}
-						}, 5000); // प्रोसेसिंग को सीमित समय में पूरा करें।
+						}, 5000);
 					},
 					{ noAck: false },
 				);
