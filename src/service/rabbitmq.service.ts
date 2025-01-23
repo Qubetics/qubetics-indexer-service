@@ -196,7 +196,7 @@ class RabbitMq {
 					}
 				}
 			},
-			{ noAck: false },
+			{ noAck: true },
 		);
 	}
 
@@ -219,7 +219,7 @@ class RabbitMq {
 					}
 				}
 			},
-			{ noAck: false },
+			{ noAck: true },
 		);
 	}
 
@@ -250,7 +250,7 @@ class RabbitMq {
 					}
 				}
 			},
-			{ noAck: false },
+			{ noAck: true },
 		);
 	}
 
@@ -274,7 +274,7 @@ class RabbitMq {
 					}
 				}
 			},
-			{ noAck: false },
+			{ noAck: true },
 		);
 	}
 
@@ -298,7 +298,7 @@ class RabbitMq {
 					}
 				}
 			},
-			{ noAck: false },
+			{ noAck: true },
 		);
 	}
 
@@ -352,7 +352,7 @@ class RabbitMq {
 					}
 				}
 			},
-			{ noAck: false },
+			{ noAck: true },
 		);
 	}
 
@@ -404,7 +404,7 @@ class RabbitMq {
 						}
 					}
 				},
-				{ noAck: false },
+				{ noAck: true },
 			);
 		}
 	}
@@ -429,7 +429,7 @@ class RabbitMq {
 					this.channel.ack(msg);
 				}
 			},
-			{ noAck: false },
+			{ noAck: true },
 		);
 	};
 }
