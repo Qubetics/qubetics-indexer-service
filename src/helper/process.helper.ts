@@ -157,7 +157,7 @@ class ProcessHelper {
 
 			// contract and coin transafer transactions
 			const _txns = { contractDeployment: 0, coin: 0 };
-			console.log('XtransactionsX', transactions, 'The _txns', _txns);
+
 			/* eslint-disable no-await-in-loop */
 			// Disable the rule for the next line
 			// eslint-disable-next-line no-restricted-syntax
