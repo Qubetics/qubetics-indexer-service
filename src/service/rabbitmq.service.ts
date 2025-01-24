@@ -44,9 +44,9 @@ class RabbitMq {
 	}
 
 	public startConsumers() {
-		this.consumeBlocks();
+		this.consumeBlocks(this.channel);
 		this.consumeUsers();
-		this.consumeAllTransaction();
+		this.consumeAllTransaction(this.channel);
 		this.consumeMissingBlocks();
 		this.consumeDownTimeBlocks();
 		this.consumeErrorBlocks();
@@ -56,7 +56,7 @@ class RabbitMq {
 	}
 
 	public connect(): Promise<amqp.Channel> {
-		const RECONNECT_DELAY = 5000;
+		const RECONNECT_DELAY = 3000;
 		const connectionOptions = { heartbeat: 30 }; // Heartbeat interval in seconds
 
 		return new Promise((resolve, reject) => {
@@ -110,6 +110,11 @@ class RabbitMq {
 											'RabbitMQ channel error:',
 											chanError,
 										);
+										setTimeout(
+											() => attemptConnection(true),
+											RECONNECT_DELAY,
+										);
+										// setTimeout(createChannel, 1000);
 									});
 
 									// Handle channel closure and recreate it
@@ -118,7 +123,11 @@ class RabbitMq {
 											'RabbitMQ channel closed, recreating...',
 											channelError,
 										);
-										setTimeout(createChannel, 1000);
+										setTimeout(
+											() => attemptConnection(true),
+											RECONNECT_DELAY,
+										);
+										// setTimeout(createChannel, 1000);
 									});
 
 									channel.on('return', (msg) => {
@@ -126,6 +135,11 @@ class RabbitMq {
 											'Message Returned Chnnale:',
 											msg.content.toString(),
 										);
+										setTimeout(
+											() => attemptConnection(true),
+											RECONNECT_DELAY,
+										);
+										// setTimeout(createChannel, 1000);
 									});
 
 									// Re-consume messages if necessary
@@ -177,9 +191,9 @@ class RabbitMq {
 	/**
 	 * For consuming all type of transactions
 	 */
-	public consumeAllTransaction() {
+	public consumeAllTransaction(channel: amqp.Channel) {
 		try {
-			this.channel?.consume(
+			channel?.consume(
 				QUEUE_NAME.TRANSACTIONS,
 				async (message: amqp.Message | null) => {
 					if (message) {
@@ -197,10 +211,10 @@ class RabbitMq {
 								);
 							}
 							console.log('acknowledging the queue for tx ..');
-							this.channel?.ack(message);
+							channel?.ack(message);
 						} catch (error) {
 							console.log('consumeAllTransaction Error', error);
-							this.channel?.ack(message);
+							channel?.ack(message);
 						}
 					}
 				},
@@ -243,7 +257,7 @@ class RabbitMq {
 				QUEUE_NAME.MISSING_BLOCK,
 				async (message: amqp.Message | null) => {
 					console.log(
-						'consumeErrorBlocks_message',
+						'consumeMissingBlocks_message',
 						message?.content.toString(),
 					);
 
@@ -268,7 +282,7 @@ class RabbitMq {
 							this.channel?.ack(message);
 						}
 					} else {
-						console.log('consumeErrorBlocks_message EKSE');
+						console.log('consumeMissingBlocks_message ELSE');
 					}
 				},
 				{ noAck: false },
@@ -402,10 +416,10 @@ class RabbitMq {
 		}
 	}
 
-	public consumeBlocks(): void {
+	public consumeBlocks(channel: amqp.Channel): void {
 		try {
 			for (let i = 0; i < 10; i += 1) {
-				this.channel?.consume(
+				channel?.consume(
 					`${QUEUE_NAME.BLOCKS}_${i}`,
 					async (message: amqp.Message | null) => {
 						setTimeout(async () => {
@@ -457,10 +471,10 @@ class RabbitMq {
 										);
 									}
 
-									this.channel?.ack(message);
+									channel?.ack(message);
 								} catch (error) {
 									console.log('consumeBlocks Error', error);
-									this.channel?.nack(message, false, false); // Do not requeue
+									channel?.nack(message, false, false); // Do not requeue
 								}
 							}
 						}, 5000);

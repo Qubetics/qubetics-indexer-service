@@ -45,7 +45,11 @@ class ProcessHelper {
 					const blockQueue = `${QUEUE_NAME.BLOCKS}_${latestBlockNo
 						.toString()
 						.slice(-1)}`;
-
+					console.log(
+						'subscribeBlocksWs-',
+						blockQueue,
+						blockHeader.number,
+					);
 					this.processblock(
 						latestBlockNo,
 						QUEUE_NAME.TRANSACTIONS,
@@ -693,7 +697,7 @@ class ProcessHelper {
 				QUEUE_NAME.TRANSACTIONS,
 				null,
 				false,
-				true,
+				false,
 			);
 			if (res?.block?.blocknumber) {
 				await explorerHelper.saveBlockData(res.block);

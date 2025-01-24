@@ -47,7 +47,9 @@ class ExlorerHelper {
 		} catch (err: any) {
 			console.log(err.message, 'saveBlockData Error');
 			const error = JSON.parse(JSON.stringify(err));
+			console.log('errorCode', error.code);
 			if (error.code === 'P2002') {
+				console.log('----ooo---');
 				return {
 					error: false,
 					message: RES_MSG.BLOCK_ADDED,
