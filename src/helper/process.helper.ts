@@ -697,7 +697,7 @@ class ProcessHelper {
 				QUEUE_NAME.TRANSACTIONS,
 				null,
 				false,
-				true,
+				false,
 			);
 			if (res?.block?.blocknumber) {
 				await explorerHelper.saveBlockData(res.block);
