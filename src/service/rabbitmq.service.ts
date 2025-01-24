@@ -46,7 +46,7 @@ class RabbitMq {
 	public startConsumers() {
 		this.consumeBlocks(this.channel);
 		this.consumeUsers();
-		this.consumeAllTransaction();
+		this.consumeAllTransaction(this.channel);
 		this.consumeMissingBlocks();
 		this.consumeDownTimeBlocks();
 		this.consumeErrorBlocks();
@@ -191,9 +191,9 @@ class RabbitMq {
 	/**
 	 * For consuming all type of transactions
 	 */
-	public consumeAllTransaction() {
+	public consumeAllTransaction(channel: amqp.Channel) {
 		try {
-			this.channel?.consume(
+			channel?.consume(
 				QUEUE_NAME.TRANSACTIONS,
 				async (message: amqp.Message | null) => {
 					if (message) {
@@ -211,10 +211,10 @@ class RabbitMq {
 								);
 							}
 							console.log('acknowledging the queue for tx ..');
-							this.channel?.ack(message);
+							channel?.ack(message);
 						} catch (error) {
 							console.log('consumeAllTransaction Error', error);
-							this.channel?.ack(message);
+							channel?.ack(message);
 						}
 					}
 				},
