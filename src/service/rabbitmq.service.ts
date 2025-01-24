@@ -44,7 +44,7 @@ class RabbitMq {
 	}
 
 	public startConsumers() {
-		this.consumeBlocks();
+		this.consumeBlocks(this.channel);
 		this.consumeUsers();
 		this.consumeAllTransaction();
 		this.consumeMissingBlocks();
@@ -416,10 +416,10 @@ class RabbitMq {
 		}
 	}
 
-	public consumeBlocks(): void {
+	public consumeBlocks(channel: amqp.Channel): void {
 		try {
 			for (let i = 0; i < 10; i += 1) {
-				this.channel?.consume(
+				channel?.consume(
 					`${QUEUE_NAME.BLOCKS}_${i}`,
 					async (message: amqp.Message | null) => {
 						setTimeout(async () => {
@@ -471,10 +471,10 @@ class RabbitMq {
 										);
 									}
 
-									this.channel?.ack(message);
+									channel?.ack(message);
 								} catch (error) {
 									console.log('consumeBlocks Error', error);
-									this.channel?.nack(message, false, false); // Do not requeue
+									channel?.nack(message, false, false); // Do not requeue
 								}
 							}
 						}, 5000);
