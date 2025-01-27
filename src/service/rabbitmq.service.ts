@@ -48,7 +48,7 @@ class RabbitMq {
 		this.consumeUsers();
 		this.consumeAllTransaction(this.channel);
 		this.consumeMissingBlocks();
-		this.consumeDownTimeBlocks();
+		this.consumeDownTimeBlocks(this.channel);
 		this.consumeErrorBlocks();
 		this.consumeValidatorDetails();
 		this.consumeStats();
@@ -350,9 +350,9 @@ class RabbitMq {
 	/**
 	 * Handle blocks one by one when server is down
 	 */
-	consumeDownTimeBlocks(): void {
+	consumeDownTimeBlocks(channel: amqp.Channel): void {
 		try {
-			this.channel?.consume(
+			channel?.consume(
 				QUEUE_NAME.DOWNTIME_BLOCK,
 				async (message: amqp.Message | null) => {
 					console.log(
@@ -400,10 +400,10 @@ class RabbitMq {
 									blockNumber.toString(),
 								);
 							}
-							this.channel?.ack(message);
+							channel?.ack(message);
 						} catch (error) {
 							console.log('consumeDownTimeBlocks Error', error);
-							this.channel?.nack(message, false, false); // Do not requeue
+							channel?.nack(message, false, false); // Do not requeue
 						}
 					} else {
 						console.log('consumeDownTimeBlocks_message ELSE');
@@ -501,11 +501,11 @@ class RabbitMq {
 						countHelper.updateLatestCount(message);
 
 						// update the stats
-						if (!statsUpdater.updateInMemoryStats(message))
-							this.channel.ack(msg);
+						// if (!statsUpdater.updateInMemoryStats(message))
+						this.channel.ack(msg);
 					} catch (error) {
 						console.log('consumeStats Error', error);
-						this.channel.ack(msg);
+						this.channel.nack(msg);
 					}
 				},
 				{ noAck: false },

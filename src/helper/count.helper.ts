@@ -132,7 +132,7 @@ class CountHelper {
 		const redisPayload = { key: '', count: 0 };
 		this.counts[countKey] += count;
 
-		console.log('	this.counts[countKey]', this.counts[countKey], countKey);
+		console.log('this.counts[countKey]', this.counts[countKey], countKey);
 
 		redisPayload.count += this.counts[countKey];
 		redisPayload.key = key;
