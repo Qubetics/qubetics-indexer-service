@@ -74,10 +74,10 @@ class RabbitMq {
 						// Handle connection errors
 						connection.on('error', (error) => {
 							logger.error('RabbitMQ connection error:', error);
-							setTimeout(
-								() => attemptConnection(true),
-								RECONNECT_DELAY,
-							);
+							// setTimeout(
+							// 	() => attemptConnection(true),
+							// 	RECONNECT_DELAY,
+							// );
 						});
 
 						// Handle connection closure
