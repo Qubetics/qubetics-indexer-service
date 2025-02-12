@@ -45,11 +45,6 @@ class ProcessHelper {
 					const blockQueue = `${QUEUE_NAME.BLOCKS}_${latestBlockNo
 						.toString()
 						.slice(-1)}`;
-					console.log(
-						'subscribeBlocksWs-',
-						blockQueue,
-						blockHeader.number,
-					);
 					this.processblock(
 						latestBlockNo,
 						QUEUE_NAME.TRANSACTIONS,
