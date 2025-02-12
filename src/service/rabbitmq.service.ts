@@ -34,8 +34,6 @@ class RabbitMq {
 			}
 			this.channel.prefetch(1);
 			this.startConsumers();
-
-			console.log('RabbitMQ server started successfully!');
 			return true;
 		} catch (error) {
 			console.error('Error while connecting to RabbitMQ:', error);
@@ -48,7 +46,7 @@ class RabbitMq {
 		this.consumeUsers();
 		this.consumeAllTransaction(this.channel);
 		this.consumeMissingBlocks();
-		this.consumeDownTimeBlocks();
+		this.consumeDownTimeBlocks(this.channel);
 		this.consumeErrorBlocks();
 		this.consumeValidatorDetails();
 		this.consumeStats();
@@ -74,10 +72,10 @@ class RabbitMq {
 						// Handle connection errors
 						connection.on('error', (error) => {
 							logger.error('RabbitMQ connection error:', error);
-							setTimeout(
-								() => attemptConnection(true),
-								RECONNECT_DELAY,
-							);
+							// setTimeout(
+							// 	() => attemptConnection(true),
+							// 	RECONNECT_DELAY,
+							// );
 						});
 
 						// Handle connection closure
@@ -350,9 +348,9 @@ class RabbitMq {
 	/**
 	 * Handle blocks one by one when server is down
 	 */
-	consumeDownTimeBlocks(): void {
+	consumeDownTimeBlocks(channel: amqp.Channel): void {
 		try {
-			this.channel?.consume(
+			channel?.consume(
 				QUEUE_NAME.DOWNTIME_BLOCK,
 				async (message: amqp.Message | null) => {
 					console.log(
@@ -400,10 +398,10 @@ class RabbitMq {
 									blockNumber.toString(),
 								);
 							}
-							this.channel?.ack(message);
+							channel?.ack(message);
 						} catch (error) {
 							console.log('consumeDownTimeBlocks Error', error);
-							this.channel?.nack(message, false, false); // Do not requeue
+							channel?.nack(message, false, false); // Do not requeue
 						}
 					} else {
 						console.log('consumeDownTimeBlocks_message ELSE');
@@ -423,10 +421,6 @@ class RabbitMq {
 					`${QUEUE_NAME.BLOCKS}_${i}`,
 					async (message: amqp.Message | null) => {
 						setTimeout(async () => {
-							console.log(
-								'consumeBlocks_message',
-								message?.content.toString(),
-							);
 							if (message) {
 								try {
 									const blockData = JSON.parse(
@@ -497,15 +491,15 @@ class RabbitMq {
 						const message: StatsType = JSON.parse(
 							msg.content.toString('utf-8'),
 						);
-						// update the latest count for data tables
-						countHelper.updateLatestCount(message);
-
 						// update the stats
-						if (!statsUpdater.updateInMemoryStats(message))
+						if (statsUpdater.updateInMemoryStats(message)) {
+							// update the latest count for data tables
+							countHelper.updateLatestCount(message);
 							this.channel.ack(msg);
+						}
 					} catch (error) {
 						console.log('consumeStats Error', error);
-						this.channel.ack(msg);
+						this.channel.nack(msg);
 					}
 				},
 				{ noAck: false },
