@@ -208,7 +208,6 @@ class RabbitMq {
 									txData.blocknumber.toString(),
 								);
 							}
-							console.log('acknowledging the queue for tx ..');
 							channel?.ack(message);
 						} catch (error) {
 							console.log('consumeAllTransaction Error', error);
