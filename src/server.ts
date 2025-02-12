@@ -55,11 +55,11 @@ app.init()
 
 		new StatsUpdater().start();
 		processHelper.subscribeBlocksWs();
-		processHelper.ProcessDowntimeBlock();
-		CronService.saveTokenPrice();
-		CronService.checkValidators();
-		CronService.updateGraph();
-		CronService.checkPendingTransaction();
+		// processHelper.ProcessDowntimeBlock();
+		// CronService.saveTokenPrice();
+		// CronService.checkValidators();
+		// CronService.updateGraph();
+		// CronService.checkPendingTransaction();
 
 		// processHelper.ProcessMissedBlockAndTxn();
 

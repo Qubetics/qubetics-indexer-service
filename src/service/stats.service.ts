@@ -1,5 +1,3 @@
-// import { appendFile } from 'fs/promises';
-// import path from 'path';
 import { CronCommand, CronJob } from 'cron';
 import {
 	CRON_TIME,
@@ -801,7 +799,6 @@ export class StatsUpdater {
 	// Queue helper for processing latest stats updation
 	updateInMemoryStats = (txDetails: StatsType) => {
 		try {
-			// console.log('txDetails IN updateInMemoryStats', txDetails);
 			if (Object.keys(this.statsCurrents).length === 0) {
 				return false;
 			}
@@ -819,8 +816,6 @@ export class StatsUpdater {
 						Number(data.count) +
 						(txDetails?.txnCount ? txDetails.txnCount : 1);
 
-				// debug logs
-				// appendFile(path.join(__dirname, 'date.txt'),`${JSON.stringify({ date: new Date(txDetails.date).toLocaleString(), end: new Date(end).toLocaleString(), flag: txDetails.date <= end })}-${recordKey}\n`);
 			});
 			return true;
 		} catch (err) {
