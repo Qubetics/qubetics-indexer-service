@@ -490,7 +490,7 @@ class RabbitMq {
 						const message: StatsType = JSON.parse(
 							msg.content.toString('utf-8'),
 						);
-						console.log("Queued Stats Update Message: ", message);
+						console.log('Queued Stats Update Message: ', message);
 
 						// update the stats
 						if (statsUpdater.updateInMemoryStats(message)) {

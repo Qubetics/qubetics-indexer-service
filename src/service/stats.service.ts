@@ -802,9 +802,9 @@ export class StatsUpdater {
 			if (Object.keys(this.statsCurrents).length === 0) {
 				return false;
 			}
-
+			console.log("Stats Payload: ", txDetails);
 			const _currentRecords = this.statsCurrents[txDetails.type].current;
-
+			console.log("Stats Payload: ", _currentRecords);
 			Object.keys(_currentRecords).forEach((recordKey) => {
 				// get the record for current time point
 				const {
@@ -815,7 +815,6 @@ export class StatsUpdater {
 					data.count =
 						Number(data.count) +
 						(txDetails?.txnCount ? txDetails.txnCount : 1);
-
 			});
 			return true;
 		} catch (err) {
