@@ -1,12 +1,15 @@
 import axios, { AxiosInstance } from 'axios';
 import * as cron from 'cron';
+import { CURRENT_DEFAULT_COIN_PRICE } from '../constant/constants';
 import { CONST_NAME, QUEUE_NAME, REDIS_KEY } from '../constant/response';
 import ExlorerHelper from '../helper/explorer.helper';
 
 import socketHelper from '../helper/socket.helper';
 import { calculateData, getValidatorsInfo } from '../helper/validator.helper';
 import web3Helper from '../helper/web3.helper';
+import logger from '../lib/logger';
 import { RabbitMqService, RedisService } from '../service';
+import redisHelper from '../service/redis.helper';
 
 const { CronJob } = cron;
 const apiUrl = environment.evmHost;
@@ -23,6 +26,42 @@ class CronService {
 			// timeout: CONST_NAME.THOUSAND,
 			timeout: 5000,
 		});
+	}
+
+	public async scheduleCoinPriceUpdation() {
+	try {
+		// save the default price initially in cache(redis)
+		const coinPrice = await redisHelper.getString(REDIS_KEY.COIN_PRICE);
+		if(!coinPrice) {
+			logger.info('Initial coin price saved');
+			await redisHelper.setString(REDIS_KEY.COIN_PRICE, CURRENT_DEFAULT_COIN_PRICE);
+		}
+
+		logger.info('Price updation scheduled');
+		new CronJob(
+			'0 0 * * 1',
+			async () => {
+				logger.info('Price updation schedule running');
+				/**
+				 * get the price from cache if saved or otherwise
+				 * default hard coded price is used
+				 */
+				const savedPrice = await redisHelper.getString(REDIS_KEY.COIN_PRICE);
+				let currentPrice = savedPrice ? Number(savedPrice) : CURRENT_DEFAULT_COIN_PRICE;
+				currentPrice += ((currentPrice*10)/100);
+
+				// save the updated price
+				redisHelper.setString(REDIS_KEY.COIN_PRICE, currentPrice);
+			},
+			null,
+			true,
+			'UTC'
+		);
+	} catch (err) {
+		console.error('Error while scheduling the coin price updation cron\n', err);
+
+	}
+
 	}
 
 	public checkPendingTransaction() {
@@ -57,6 +96,7 @@ class CronService {
 		// Call the function initially to start the scheduling
 		await fetchData();
 	}
+
 	// public checkValidators() {
 	// 	new CronJob(
 	// 		'*/3 * * * * *', // will run every 1 sec.
@@ -157,6 +197,7 @@ class CronService {
 			return false;
 		}
 	}
+
 }
 
 export default new CronService();

@@ -45,11 +45,6 @@ class ProcessHelper {
 					const blockQueue = `${QUEUE_NAME.BLOCKS}_${latestBlockNo
 						.toString()
 						.slice(-1)}`;
-					console.log(
-						'subscribeBlocksWs-',
-						blockQueue,
-						blockHeader.number,
-					);
 					this.processblock(
 						latestBlockNo,
 						QUEUE_NAME.TRANSACTIONS,
@@ -130,7 +125,7 @@ class ProcessHelper {
 					JSON.stringify({
 						type: REDIS_KEY.TxHistory,
 						date: blockExtractedData.timestamp
-							? blockExtractedData.timestamp
+							? new Date(blockExtractedData.timestamp).getTime()
 							: Date.now(),
 						txnCount: transactions.length,
 					}),
@@ -221,7 +216,6 @@ class ProcessHelper {
 					);
 				}
 				transactionsArr.push(txExtractedData);
-				console.log(txExtractedData, 'txExtractedData');
 				if (txQueue)
 					RabbitMqService.enqueueData(
 						txQueue,
@@ -236,7 +230,7 @@ class ProcessHelper {
 					JSON.stringify({
 						type: REDIS_KEY.CoinTransferTxHistory,
 						date: blockExtractedData.timestamp
-							? blockExtractedData.timestamp
+							? new Date(blockExtractedData.timestamp).getTime()
 							: Date.now(),
 						txnCount: _txns.coin,
 					}),
@@ -339,7 +333,6 @@ class ProcessHelper {
 					break;
 
 				case TRANSACTION_TYPE.COIN_TRANSFER:
-					console.log('COIN_TRANSFER CASE: ', `${tx.txhash}`);
 					/* Coin Transfer Transaction Count Saving Code space */
 					await this.handleCoinTransfer(tx);
 					break;
@@ -658,8 +651,6 @@ class ProcessHelper {
 			txFee: exp(`${tx.txFee}`),
 			gasPrice: Number(exp(`${tx.gasPrice}`)),
 		};
-
-		console.log('transaction,,,,,,,', tx);
 
 		const coinTxRes = await explorerHelper.coinTransferTxSave(copiedObject);
 		return coinTxRes;

@@ -3,6 +3,7 @@ export const MILLI_IN_HOUR = MILLI_IN_MIN * 60;
 export const MILLI_IN_DAY = MILLI_IN_HOUR * 24;
 export const REDIS_STATS_UPDATION_CRONTIME = '0 */1 * * * *';
 export const REDIS_STATS_CRON_KEY = 'REDIS_STATS_UPDATE';
+export const CURRENT_DEFAULT_COIN_PRICE=0.07339091;
 
 export const MILLI_UNITS: Record<string, number> = {
 	mintue: 60000,
