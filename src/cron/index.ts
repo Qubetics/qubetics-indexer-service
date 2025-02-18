@@ -72,6 +72,52 @@ class CronService {
 		}
 	}
 
+	public async coinPriceGraphUpdation() {
+		try {
+			// Fetch existing price graph from Redis
+			const priceHistory: { date: string; price: number }[] = 
+				JSON.parse(await redisHelper.getString(REDIS_KEY.COIN_PRICE_GRAPH)) || [];
+	
+			new CronJob(
+				'0 0 * * *',
+				async () => {
+					try {
+						// Fetch the current coin price
+						const currentCoinPrice = await redisHelper.getString(REDIS_KEY.COIN_PRICE);
+						if (!currentCoinPrice) {
+							logger.info('Current coin price not found.');
+							return;
+						}
+
+						const today = new Date().toISOString().split('T')[0];
+
+						// Add new price entry
+						priceHistory.push({ date: today, price: parseFloat(currentCoinPrice) });
+	
+						// Keep only most recent 30 entries
+						if (priceHistory.length > 30) {
+							priceHistory.shift();
+						}
+	
+						// Save updated history back to Redis
+						await redisHelper.setString(REDIS_KEY.COIN_PRICE_GRAPH, JSON.stringify(priceHistory));
+	
+						logger.info(`Coin price record saved for ${today}: ${currentCoinPrice}`);
+					} catch (error) {
+						console.error('Error in coin price graph cron job:', error);
+					}
+				},
+				null,
+				true,
+				'UTC'
+			);
+	
+			logger.info('Coin price history scheduler started.');
+		} catch (err) {
+			console.error('Error while updating the coin price graph cron\n', err);
+		}
+	}
+
 	public checkPendingTransaction() {
 		new CronJob(
 			'*/30 * * * *', // will run every 30 min.
