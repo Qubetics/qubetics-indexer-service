@@ -1,4 +1,4 @@
-import { ERC20ABI, ERC721ABI } from '../constant/abi';
+import { ERC1155ABI, ERC20ABI, ERC721ABI } from '../constant/abi';
 import {
 	RES_MSG,
 	REDIS_KEY,
@@ -123,7 +123,8 @@ class ProcessHelper {
 				timestamp: new Date(Number(block?.timestamp) * 1000),
 			};
 
-			if (transactions.length)
+			if (transactions.length) {
+				console.log('We are enqueing TrX....');
 				rabbitmqService.enqueueData(
 					QUEUE_NAME.STATS_UPDATE,
 					JSON.stringify({
@@ -134,6 +135,7 @@ class ProcessHelper {
 						txnCount: transactions.length,
 					}),
 				);
+			}
 
 			if (blockQueue)
 				RabbitMqService.enqueueData(
@@ -539,6 +541,18 @@ class ProcessHelper {
 						});
 					}
 
+					// if (
+					// 	tx.toAddress !== toAddress &&
+					// 	method === 'transfer' &&
+					// 	contractType.type === CONTRACT_TYPE.ERC20
+					// ) {
+					// 	await explorerHelper.updateTransactionTable(
+					// 		tx.txhash,
+					// 		tx.toAddress,
+					// 		toAddress,
+					// 	);
+					// }
+
 					const contractLogData: IContractLogs = {
 						logs: JSON.stringify(tx.logs),
 						topics,
@@ -739,6 +753,20 @@ class ProcessHelper {
 					type: CONTRACT_TYPE.ERC721,
 				};
 
+			contract = new Web3SocketHelper.web3Ws.eth.Contract(
+				ERC1155ABI,
+				contractAddress,
+			);
+			const isERC1155 = await this.checkERC1155(
+				contractAddress,
+				contract,
+			);
+
+			if (isERC1155)
+				return {
+					contract,
+					type: CONTRACT_TYPE.ERC1155,
+				};
 			// const event = contract.call({ anonymous: false }, log);
 
 			return {
@@ -833,6 +861,21 @@ class ProcessHelper {
 			return true;
 		} catch (error) {
 			logger.error('error while calculating and updating fee:', error);
+			return false;
+		}
+	}
+
+	async checkERC1155(_contractAddress: any, contract: any) {
+		try {
+			// const contract = new Web3SocketHelper.web3Ws.eth.Contract(ERC721ABI, contractAddress)
+			return {
+				contract,
+				state: await contract.methods
+					.supportsInterface('0xd9b67a26')
+					.call(),
+			};
+		} catch (err) {
+			// console.error('Error checking ERC-721 functions:', err);
 			return false;
 		}
 	}

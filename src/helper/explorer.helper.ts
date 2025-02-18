@@ -759,6 +759,28 @@ class ExlorerHelper {
 			return false;
 		}
 	};
+
+	updateTransactionTable = async (
+		txHash: string,
+		contractAddress: string,
+		toAddress: string,
+	) => {
+		try {
+			await prisma.transactions.update({
+				data: {
+					contractAddress: contractAddress,
+					toAddress: toAddress,
+				},
+				where: {
+					txhash: txHash,
+				},
+			});
+			return true;
+		} catch (error) {
+			console.log('Error while update trxn table', error);
+			return false;
+		}
+	};
 }
 
 export default new ExlorerHelper();
