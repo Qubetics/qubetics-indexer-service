@@ -815,7 +815,6 @@ export class StatsUpdater {
 					data.count =
 						Number(data.count) +
 						(txDetails?.txnCount ? txDetails.txnCount : 1);
-
 			});
 			return true;
 		} catch (err) {

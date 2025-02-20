@@ -723,7 +723,7 @@ class ProcessHelper {
 	 */
 	async getContractTypes(contractAddress: string) {
 		try {
-			let contract = new Web3SocketHelper.web3Ws.eth.Contract(
+			const contract = new Web3SocketHelper.web3Ws.eth.Contract(
 				ERC20ABI,
 				contractAddress,
 			);
@@ -876,7 +876,7 @@ class ProcessHelper {
 	}
 
 	async checkContractType(contractAddress: string) {
-		const provider = new ethers.JsonRpcProvider(environment.evmHost);
+		const provider = new ethers.JsonRpcProvider(environment.nodeLink);
 
 		const abi = [
 			'function supportsInterface(bytes4 interfaceId) external view returns (bool)',
@@ -900,19 +900,19 @@ class ProcessHelper {
 					contract,
 					type: CONTRACT_TYPE.ERC1155,
 				};
-			} else if (isERC721) {
+			}
+			if (isERC721) {
 				console.log('The contract is ERC-721.');
 				return {
 					contract,
 					type: CONTRACT_TYPE.ERC721,
 				};
-			} else {
-				console.log('The contract is neither ERC-721 nor ERC-1155.');
-				return {
-					contract,
-					type: CONTRACT_TYPE.UNKNOWN,
-				};
 			}
+			console.log('The contract is neither ERC-721 nor ERC-1155.');
+			return {
+				contract,
+				type: CONTRACT_TYPE.UNKNOWN,
+			};
 		} catch (error) {
 			console.error('Error checking contract type:', error);
 			return false;

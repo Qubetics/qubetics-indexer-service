@@ -29,39 +29,47 @@ class CronService {
 	}
 
 	public async scheduleCoinPriceUpdation() {
-	try {
-		// save the default price initially in cache(redis)
-		const coinPrice = await redisHelper.getString(REDIS_KEY.COIN_PRICE);
-		if(!coinPrice) {
-			logger.info('Initial coin price saved');
-			await redisHelper.setString(REDIS_KEY.COIN_PRICE, CURRENT_DEFAULT_COIN_PRICE);
+		try {
+			// save the default price initially in cache(redis)
+			const coinPrice = await redisHelper.getString(REDIS_KEY.COIN_PRICE);
+			if (!coinPrice) {
+				logger.info('Initial coin price saved');
+				await redisHelper.setString(
+					REDIS_KEY.COIN_PRICE,
+					CURRENT_DEFAULT_COIN_PRICE,
+				);
+			}
+
+			logger.info('Price updation scheduled');
+			new CronJob(
+				'0 0 * * 1',
+				async () => {
+					logger.info('Price updation schedule running');
+					/**
+					 * get the price from cache if saved or otherwise
+					 * default hard coded price is used
+					 */
+					const savedPrice = await redisHelper.getString(
+						REDIS_KEY.COIN_PRICE,
+					);
+					let currentPrice = savedPrice
+						? Number(savedPrice)
+						: CURRENT_DEFAULT_COIN_PRICE;
+					currentPrice += (currentPrice * 10) / 100;
+
+					// save the updated price
+					redisHelper.setString(REDIS_KEY.COIN_PRICE, currentPrice);
+				},
+				null,
+				true,
+				'UTC',
+			);
+		} catch (err) {
+			console.error(
+				'Error while scheduling the coin price updation cron\n',
+				err,
+			);
 		}
-
-		logger.info('Price updation scheduled');
-		new CronJob(
-			'0 0 * * 1',
-			async () => {
-				logger.info('Price updation schedule running');
-				/**
-				 * get the price from cache if saved or otherwise
-				 * default hard coded price is used
-				 */
-				const savedPrice = await redisHelper.getString(REDIS_KEY.COIN_PRICE);
-				let currentPrice = savedPrice ? Number(savedPrice) : CURRENT_DEFAULT_COIN_PRICE;
-				currentPrice += ((currentPrice*10)/100);
-
-				// save the updated price
-				redisHelper.setString(REDIS_KEY.COIN_PRICE, currentPrice);
-			},
-			null,
-			true,
-			'UTC'
-		);
-	} catch (err) {
-		console.error('Error while scheduling the coin price updation cron\n', err);
-
-	}
-
 	}
 
 	public checkPendingTransaction() {
@@ -197,7 +205,6 @@ class CronService {
 			return false;
 		}
 	}
-
 }
 
 export default new CronService();
