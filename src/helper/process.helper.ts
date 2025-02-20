@@ -1,3 +1,4 @@
+import { ethers } from 'ethers';
 import { ERC1155ABI, ERC20ABI, ERC721ABI } from '../constant/abi';
 import {
 	RES_MSG,
@@ -733,31 +734,35 @@ class ProcessHelper {
 					type: CONTRACT_TYPE.ERC20,
 				};
 
-			contract = new Web3SocketHelper.web3Ws.eth.Contract(
-				ERC721ABI,
-				contractAddress,
-			);
-			const isERC721 = await this.checkERC721(contractAddress, contract);
-			if (isERC721)
-				return {
-					contract,
-					type: CONTRACT_TYPE.ERC721,
-				};
+			// contract = new Web3SocketHelper.web3Ws.eth.Contract(
+			// 	ERC721ABI,
+			// 	contractAddress,
+			// );
+			// const isERC721 = await this.checkERC721(contractAddress, contract);
+			// if (isERC721)
+			// 	return {
+			// 		contract,
+			// 		type: CONTRACT_TYPE.ERC721,
+			// 	};
 
-			contract = new Web3SocketHelper.web3Ws.eth.Contract(
-				ERC1155ABI,
-				contractAddress,
-			);
-			const isERC1155 = await this.checkERC1155(
-				contractAddress,
-				contract,
-			);
+			// contract = new Web3SocketHelper.web3Ws.eth.Contract(
+			// 	ERC1155ABI,
+			// 	contractAddress,
+			// );
+			// const isERC1155 = await this.checkERC1155(
+			// 	contractAddress,
+			// 	contract,
+			// );
 
-			if (isERC1155)
-				return {
-					contract,
-					type: CONTRACT_TYPE.ERC1155,
-				};
+			// if (isERC1155)
+			// 	return {
+			// 		contract,
+			// 		type: CONTRACT_TYPE.ERC1155,
+			// 	};
+
+			const checkContractType =
+				await this.checkContractType(contractAddress);
+			if (checkContractType) return checkContractType;
 			// const event = contract.call({ anonymous: false }, log);
 
 			return {
@@ -858,7 +863,7 @@ class ProcessHelper {
 
 	async checkERC1155(_contractAddress: any, contract: any) {
 		try {
-			// const contract = new Web3SocketHelper.web3Ws.eth.Contract(ERC721ABI, contractAddress)
+			console.log('ERC1155Checking', _contractAddress);
 			return {
 				contract,
 				state: await contract.methods
@@ -866,7 +871,50 @@ class ProcessHelper {
 					.call(),
 			};
 		} catch (err) {
-			// console.error('Error checking ERC-721 functions:', err);
+			return false;
+		}
+	}
+
+	async checkContractType(contractAddress: string) {
+		const provider = new ethers.JsonRpcProvider(environment.evmHost);
+
+		const abi = [
+			'function supportsInterface(bytes4 interfaceId) external view returns (bool)',
+		];
+		const ERC721_INTERFACE_ID = '0x80ac58cd'; // IERC721
+		const ERC1155_INTERFACE_ID = '0xd9b67a26'; // IERC1155
+		const contract = new ethers.Contract(contractAddress, abi, provider);
+
+		try {
+			const isERC721 =
+				await contract.supportsInterface(ERC721_INTERFACE_ID);
+			const isERC1155 =
+				await contract.supportsInterface(ERC1155_INTERFACE_ID);
+
+			console.log('supportsInterface(ERC-721):', isERC721);
+			console.log('supportsInterface(ERC-1155):', isERC1155);
+
+			if (isERC1155) {
+				console.log('The contract is ERC-1155.');
+				return {
+					contract,
+					type: CONTRACT_TYPE.ERC1155,
+				};
+			} else if (isERC721) {
+				console.log('The contract is ERC-721.');
+				return {
+					contract,
+					type: CONTRACT_TYPE.ERC721,
+				};
+			} else {
+				console.log('The contract is neither ERC-721 nor ERC-1155.');
+				return {
+					contract,
+					type: CONTRACT_TYPE.UNKNOWN,
+				};
+			}
+		} catch (error) {
+			console.error('Error checking contract type:', error);
 			return false;
 		}
 	}

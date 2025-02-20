@@ -768,8 +768,8 @@ class ExlorerHelper {
 		try {
 			await prisma.transactions.update({
 				data: {
-					contractAddress: contractAddress,
-					toAddress: toAddress,
+					contractAddress,
+					toAddress,
 				},
 				where: {
 					txhash: txHash,
