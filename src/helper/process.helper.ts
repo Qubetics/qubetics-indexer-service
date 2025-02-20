@@ -723,7 +723,7 @@ class ProcessHelper {
 	 */
 	async getContractTypes(contractAddress: string) {
 		try {
-			const contract = new Web3SocketHelper.web3Ws.eth.Contract(
+			let contract = new Web3SocketHelper.web3Ws.eth.Contract(
 				ERC20ABI,
 				contractAddress,
 			);
@@ -734,10 +734,10 @@ class ProcessHelper {
 					type: CONTRACT_TYPE.ERC20,
 				};
 
-			// contract = new Web3SocketHelper.web3Ws.eth.Contract(
-			// 	ERC721ABI,
-			// 	contractAddress,
-			// );
+			contract = new Web3SocketHelper.web3Ws.eth.Contract(
+				ERC721ABI,
+				contractAddress,
+			);
 			// const isERC721 = await this.checkERC721(contractAddress, contract);
 			// if (isERC721)
 			// 	return {
@@ -762,8 +762,24 @@ class ProcessHelper {
 
 			const checkContractType =
 				await this.checkContractType(contractAddress);
-			if (checkContractType) return checkContractType;
-			// const event = contract.call({ anonymous: false }, log);
+			if (checkContractType) {
+				if (checkContractType.type === 'ERC-721') {
+					contract = new Web3SocketHelper.web3Ws.eth.Contract(
+						ERC721ABI,
+						contractAddress,
+					);
+				} else if (checkContractType.type === 'ERC-1155') {
+					contract = new Web3SocketHelper.web3Ws.eth.Contract(
+						ERC1155ABI,
+						contractAddress,
+					);
+				}
+
+				return {
+					contract,
+					type: checkContractType.type,
+				};
+			}
 
 			return {
 				contract,
