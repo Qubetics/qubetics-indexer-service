@@ -104,8 +104,6 @@ export const REDIS_KEY = {
 	MARKET_CAP_PRICE: 'MARKET_CAP_PRICE',
 	VALIDATOR_DATA: 'VALIDATOR_DATA',
 	COIN_PRICE: 'COIN_PRICE',
-	COIN_PRICE_GRAPH: 'COIN_PRICE_GRAPH',
-	REDIS_TEST_KEY: 'REDIS_TEST_KEY',
 
 	// stats
 	TxHistory: 'TxHistory',
@@ -114,6 +112,7 @@ export const REDIS_KEY = {
 	ContractDeploymentHistory: 'ContractDeploymentHistory',
 	StatsGenerated: 'StatsGenerated',
 	TxFeeHistory: 'TxFeeHistory',
+	CoinPriceGraph: 'CoinPriceGraph',
 
 	// counts
 	BLOCKS_COUNT: 'BLOCKS_COUNT',
