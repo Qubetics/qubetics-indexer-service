@@ -71,13 +71,13 @@ class RedisService {
 	}
 
 	// get the string data from redis
-	public async getString(key: string) {
+	public async getString<T>(key: string):Promise<T> {
 		try {
 			const res = (await this.client.get(key)) as string;
 			return JSON.parse(res);
 		} catch (err) {
-			logger.error('error while getting the data from redis: ', err);
-			return [];
+			logger.error('Error while getting the data from redis: ', err);
+			return null as T;
 		}
 	}
 }

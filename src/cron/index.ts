@@ -1,6 +1,8 @@
+import { AnyCnameRecord } from 'dns';
 import axios, { AxiosInstance } from 'axios';
 import * as cron from 'cron';
-import { CURRENT_DEFAULT_COIN_PRICE } from '../constant/constants';
+import { months } from 'moment';
+import { CURRENT_DEFAULT_COIN_PRICE, DAYS } from '../constant/constants';
 import { CONST_NAME, QUEUE_NAME, REDIS_KEY } from '../constant/response';
 import ExlorerHelper from '../helper/explorer.helper';
 
@@ -8,12 +10,17 @@ import socketHelper from '../helper/socket.helper';
 import { calculateData, getValidatorsInfo } from '../helper/validator.helper';
 import web3Helper from '../helper/web3.helper';
 import logger from '../lib/logger';
+import { deepCopy } from '../lib/utilities.helper';
 import { RabbitMqService, RedisService } from '../service';
 import redisHelper from '../service/redis.helper';
 
 const { CronJob } = cron;
 const apiUrl = environment.evmHost;
 let apiRes: AxiosInstance;
+
+// types for stats
+type DatePoint = { date: string; value: number };
+type GraphPayload = { monthly: DatePoint[]; daily: DatePoint[] };
 
 class CronService {
 	constructor() {
@@ -72,44 +79,137 @@ class CronService {
 		}
 	}
 
+	/**
+	 * Check the days of the week (eg. Monday, Tuesday...)
+	 * @returns boolean
+	 */
+	private checkDayOfWeek(date: string | number, day: number) {
+		return new Date(date).getDay() === day;
+	}
+
+	/**
+	 * Generate months and days date points for restoring graphs
+	 * @returns GraphPayload
+	 */
+	private generateDatePoints(month = 11, day = 29): GraphPayload {
+		const today = new Date();
+		const monthly: { date: string; value: number }[] = [];
+		const daily: { date: string; value: number }[] = [];
+
+		// Generate past 11 months and current month first date points
+		for (let i = month; i >= 0; i--) {
+			const date = new Date(today.getFullYear(), today.getMonth() - i, 1);
+			monthly.push({
+				date: date.toISOString(),
+				value: 0
+			});
+		}
+
+		// Generate current and previous 29 days point
+		for (let i = day; i >= 0; i--) {
+			const date = new Date();
+			date.setDate(today.getDate() - i);
+			daily.push({
+				date: date.toISOString(),
+				value: 0
+			});
+		}
+
+		return { monthly, daily };
+	}
+
+	/**
+	 * restore previous coin price points
+	 * @param daysData
+	 * @returns DatePoint[]
+	 */
+	private restorePriceDaysGraph(daysData: DatePoint[], price: number) {
+		let coinPrice = price;
+		// not side-effects
+		return deepCopy(daysData).reverse().map((point: DatePoint): DatePoint => {
+			point.value = coinPrice;
+			if (this.checkDayOfWeek(point.date, DAYS.MONDAY)) coinPrice -= (coinPrice * 10) / 100;
+			return point;
+		});
+	};
+
+	/**
+	 * restore previous coin price points
+	 * @param monthsData
+	 * @returns DatePoint[]
+	 */
+	private restorePriceMonthsGraph(monthsData: DatePoint[], price: number) {
+		let coinPrice = price;
+		// not side-effects
+		return deepCopy(monthsData).reverse().map((point: DatePoint): DatePoint => {
+			point.value = coinPrice > CURRENT_DEFAULT_COIN_PRICE ? coinPrice : CURRENT_DEFAULT_COIN_PRICE;
+			coinPrice -= (((coinPrice * 10) / 100) * 4);
+			return point;
+		});
+	}
+
+
+	/**
+	 * restore the graph history points
+	 * @returns boolean
+	 */
+	private async restoreGraphs() {
+		try {
+			let priceGraph = await redisHelper.getString<GraphPayload>(REDIS_KEY.CoinPriceGraph);
+			// if stats is already generated then don't restore again
+			if (priceGraph) return false;
+			const tokenPrice = (await redisHelper.getString<number>(REDIS_KEY.COIN_PRICE)) || CURRENT_DEFAULT_COIN_PRICE;
+
+			priceGraph = this.generateDatePoints();
+			const daysData = this.restorePriceDaysGraph(priceGraph.daily, tokenPrice);
+			const monthsData = this.restorePriceMonthsGraph(priceGraph.monthly, tokenPrice);
+
+			await redisHelper.setString(REDIS_KEY.CoinPriceGraph, { daily: daysData, monthly: monthsData });
+			return true;
+		} catch (err) {
+			console.log('Error while restoring graph: ', err);
+			return false;
+		}
+	}
+
 	public async coinPriceGraphUpdation() {
 		try {
-			// Fetch existing price graph from Redis
-			const priceGraph = await redisHelper.getString(REDIS_KEY.CoinPriceGraph) || { daily: [], yearly: [] };
 
+			await this.restoreGraphs();
+
+			/**
+			 * schedule the cron to handle graph price update
+			 * NOTE: need to further work on it for implementing
+			 * more optimized method
+			 */
 			new CronJob(
 				'2 0 * * *',
 				async () => {
-					const currentCoinPrice = await redisHelper.getString(
-						REDIS_KEY.COIN_PRICE,
-					);
-					if (!currentCoinPrice) {
-						logger.info('Current coin price not found.');
-						return;
-					}
-					const today = new Date().toISOString().split('T')[0];
-					const date = new Date(today);
+					const priceGraph = await redisHelper.getString<GraphPayload>(REDIS_KEY.CoinPriceGraph);
+					const currentCoinPrice = (await redisHelper.getString<number>(REDIS_KEY.COIN_PRICE)) || CURRENT_DEFAULT_COIN_PRICE;
+
+					const date = new Date();
+					const today = date.toISOString();
 
 					priceGraph.daily.push({
 						date: today,
-						price: parseFloat(currentCoinPrice),
-					  });
+						value: currentCoinPrice,
+					});
+					priceGraph.daily.shift();
 
-					if (priceGraph.daily.length > 30) {
-          				priceGraph.daily.shift();
-        			  }
-
-					  if (date.getDate() === 1) {
-						priceGraph.yearly.push({
-						  date: today,
-						  price: parseFloat(currentCoinPrice),
+					if (date.getDate() === 1) {
+						priceGraph.monthly.push({
+							date: today,
+							value: currentCoinPrice,
 						});
-			  
-						if (priceGraph.yearly.length > 12) {
-						  priceGraph.yearly.shift();
-						}
-					  }
-					    
+
+						priceGraph.monthly.shift();
+
+						// only update the monthly price on monday
+					} else if (this.checkDayOfWeek(today, DAYS.MONDAY))
+						priceGraph.monthly[0].value = currentCoinPrice;
+
+
 					// Save updated history back to Redis
 					const updatedGraph = await redisHelper.setString(
 						REDIS_KEY.CoinPriceGraph,
@@ -214,7 +314,7 @@ class CronService {
 			const latestBlock = await web3Helper.getBlockNumber();
 			const lastBlock = BigInt(latestBlock).toString();
 
-			const updateBlock = await RedisService.getString(
+			const updateBlock = await RedisService.getString<number>(
 				CONST_NAME.LATEST_BLOCK,
 			);
 

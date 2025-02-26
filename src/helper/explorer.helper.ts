@@ -571,27 +571,16 @@ class ExlorerHelper {
 
 	getRedisValue = async (): Promise<
 		| {
-				supply: number;
-				marketCap: number;
-				validatorData: ValidatorData;
-		  }
+			supply: number;
+			marketCap: number;
+			validatorData: ValidatorData;
+		}
 		| false
 	> => {
 		try {
-			let supply;
-			supply = await RedisService.getString(REDIS_KEY.CIRCULATING_SUPPLY);
-			supply = supply || 0;
-
-			let marketCap;
-			marketCap = await RedisService.getString(REDIS_KEY.MARKET_CAP);
-			marketCap = marketCap || 0;
-
-			let validatorData;
-			validatorData = await RedisService.getString(
-				REDIS_KEY.VALIDATOR_DATA,
-			);
-
-			validatorData = validatorData || '';
+			const supply = (await RedisService.getString<number>(REDIS_KEY.CIRCULATING_SUPPLY)) || 0;
+			const marketCap = (await RedisService.getString<number>(REDIS_KEY.MARKET_CAP)) || 0;
+			const validatorData = (await RedisService.getString<any>(REDIS_KEY.VALIDATOR_DATA)) || '';
 
 			return {
 				supply,
