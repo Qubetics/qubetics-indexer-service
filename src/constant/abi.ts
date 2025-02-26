@@ -1296,3 +1296,261 @@ export const ERC721ABI: any = [
 		type: 'function',
 	},
 ];
+
+export const ERC1155ABI: any = [
+	{
+		constant: true,
+		inputs: [
+			{
+				name: '_id',
+				type: 'uint256',
+			},
+			{
+				name: '_account',
+				type: 'address',
+			},
+		],
+		name: 'balanceOf',
+		outputs: [
+			{
+				name: '',
+				type: 'uint256',
+			},
+		],
+		payable: false,
+		stateMutability: 'view',
+		type: 'function',
+	},
+	{
+		constant: true,
+		inputs: [
+			{
+				name: '_ids',
+				type: 'uint256[]',
+			},
+			{
+				name: '_accounts',
+				type: 'address[]',
+			},
+		],
+		name: 'balanceOfBatch',
+		outputs: [
+			{
+				name: '',
+				type: 'uint256[]',
+			},
+		],
+		payable: false,
+		stateMutability: 'view',
+		type: 'function',
+	},
+	{
+		constant: true,
+		inputs: [
+			{
+				name: '_id',
+				type: 'uint256',
+			},
+		],
+		name: 'isNonFungible',
+		outputs: [
+			{
+				name: '',
+				type: 'bool',
+			},
+		],
+		payable: false,
+		stateMutability: 'view',
+		type: 'function',
+	},
+	{
+		constant: true,
+		inputs: [
+			{
+				name: '_ids',
+				type: 'uint256[]',
+			},
+		],
+		name: 'uri',
+		outputs: [
+			{
+				name: '',
+				type: 'string',
+			},
+		],
+		payable: false,
+		stateMutability: 'view',
+		type: 'function',
+	},
+	{
+		inputs: [
+			{
+				name: '_uri',
+				type: 'string',
+			},
+		],
+		payable: false,
+		stateMutability: 'nonpayable',
+		type: 'constructor',
+	},
+	{
+		anonymous: false,
+		inputs: [
+			{
+				indexed: true,
+				name: 'operator',
+				type: 'address',
+			},
+			{
+				indexed: true,
+				name: 'from',
+				type: 'address',
+			},
+			{
+				indexed: true,
+				name: 'id',
+				type: 'uint256',
+			},
+			{
+				indexed: false,
+				name: 'value',
+				type: 'uint256',
+			},
+		],
+		name: 'TransferSingle',
+		type: 'event',
+	},
+	{
+		anonymous: false,
+		inputs: [
+			{
+				indexed: true,
+				name: 'operator',
+				type: 'address',
+			},
+			{
+				indexed: true,
+				name: 'from',
+				type: 'address',
+			},
+			{
+				indexed: true,
+				name: 'to',
+				type: 'address',
+			},
+			{
+				indexed: false,
+				name: 'ids',
+				type: 'uint256[]',
+			},
+			{
+				indexed: false,
+				name: 'values',
+				type: 'uint256[]',
+			},
+		],
+		name: 'TransferBatch',
+		type: 'event',
+	},
+	{
+		anonymous: false,
+		inputs: [
+			{
+				indexed: true,
+				name: 'operator',
+				type: 'address',
+			},
+			{
+				indexed: true,
+				name: 'from',
+				type: 'address',
+			},
+			{
+				indexed: true,
+				name: 'to',
+				type: 'address',
+			},
+			{
+				indexed: false,
+				name: 'data',
+				type: 'bytes',
+			},
+		],
+		name: 'TransferWithMetadata',
+		type: 'event',
+	},
+	{
+		anonymous: false,
+		inputs: [
+			{
+				indexed: true,
+				name: 'operator',
+				type: 'address',
+			},
+			{
+				indexed: true,
+				name: 'from',
+				type: 'address',
+			},
+			{
+				indexed: true,
+				name: 'to',
+				type: 'address',
+			},
+			{
+				indexed: false,
+				name: 'id',
+				type: 'uint256',
+			},
+			{
+				indexed: true,
+				name: 'idIndex',
+				type: 'uint256',
+			},
+			{
+				indexed: false,
+				name: 'value',
+				type: 'uint256',
+			},
+		],
+		name: 'TransferToParent',
+		type: 'event',
+	},
+	{
+		anonymous: false,
+		inputs: [
+			{
+				indexed: true,
+				name: 'operator',
+				type: 'address',
+			},
+			{
+				indexed: true,
+				name: 'from',
+				type: 'address',
+			},
+			{
+				indexed: true,
+				name: 'to',
+				type: 'address',
+			},
+			{
+				indexed: false,
+				name: 'ids',
+				type: 'uint256[]',
+			},
+			{
+				indexed: false,
+				name: 'values',
+				type: 'uint256[]',
+			},
+			{
+				indexed: false,
+				name: 'data',
+				type: 'bytes',
+			},
+		],
+		name: 'BatchTransferWithMetadata',
+		type: 'event',
+	},
+];

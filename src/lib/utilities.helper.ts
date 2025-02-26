@@ -125,7 +125,7 @@ export async function fillMissingDatesWithZeroByDay(
 	startDate: Date,
 	currentDateVal: Date,
 ) {
-	startDate.setDate(startDate.getDate() + 1);
+	startDate.setDate(startDate.getDate() + 1); // including startDate itself.
 	const dateMap = new Map(
 		data.map((item) => [item.day.toISOString(), item.count]),
 	);
