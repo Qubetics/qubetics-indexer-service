@@ -206,7 +206,7 @@ class ProcessHelper {
 					txExtractedData.logs = txReceipt.logs || [];
 				} else {
 					const savedPendingTransaction =
-						await RedisService.getString(REDIS_KEY.PENDING_TX);
+						await RedisService.getString<any>(REDIS_KEY.PENDING_TX);
 					savedPendingTransaction.push(txExtractedData);
 					await RedisService.setString(
 						REDIS_KEY.PENDING_TX,

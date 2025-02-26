@@ -112,6 +112,7 @@ export const REDIS_KEY = {
 	ContractDeploymentHistory: 'ContractDeploymentHistory',
 	StatsGenerated: 'StatsGenerated',
 	TxFeeHistory: 'TxFeeHistory',
+	CoinPriceGraph: 'CoinPriceGraph',
 
 	// counts
 	BLOCKS_COUNT: 'BLOCKS_COUNT',
