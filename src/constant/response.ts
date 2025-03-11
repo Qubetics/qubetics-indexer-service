@@ -35,6 +35,7 @@ export const ERROR_MSG = {
 	GET_CONTRACT_ERROR: 'error occured while fetching contract detail',
 	DECODE_PARAM_ERROR: 'error occured while decoding param',
 	GET_APR_ERROR: 'error occured while calculating apr value',
+	COIN_PRICE_UPDATION: 'Someting went wrong while updation coin price graph'
 };
 
 export const CONST_NAME = {

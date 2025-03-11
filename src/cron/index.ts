@@ -3,7 +3,7 @@ import axios, { AxiosInstance } from 'axios';
 import * as cron from 'cron';
 import { months } from 'moment';
 import { CURRENT_DEFAULT_COIN_PRICE, DAYS } from '../constant/constants';
-import { CONST_NAME, QUEUE_NAME, REDIS_KEY } from '../constant/response';
+import { CONST_NAME, ERROR_MSG, QUEUE_NAME, REDIS_KEY } from '../constant/response';
 import ExlorerHelper from '../helper/explorer.helper';
 
 import socketHelper from '../helper/socket.helper';
@@ -183,7 +183,7 @@ class CronService {
 			 * more optimized method
 			 */
 			new CronJob(
-				'2 0 * * *',
+				'1 0 * * *',
 				async () => {
 					const priceGraph = await redisHelper.getString<GraphPayload>(REDIS_KEY.CoinPriceGraph);
 					const currentCoinPrice = (await redisHelper.getString<number>(REDIS_KEY.COIN_PRICE)) || CURRENT_DEFAULT_COIN_PRICE;
@@ -191,19 +191,18 @@ class CronService {
 					const date = new Date();
 					const today = date.toISOString();
 
-					priceGraph.daily.push({
+					priceGraph.daily.unshift({
 						date: today,
 						value: currentCoinPrice,
 					});
-					priceGraph.daily.shift();
 
 					if (date.getDate() === 1) {
-						priceGraph.monthly.push({
+						priceGraph.monthly.unshift({
 							date: today,
 							value: currentCoinPrice,
 						});
 
-						priceGraph.monthly.shift();
+						priceGraph.monthly.pop();
 
 						// only update the monthly price on monday
 					} else if (this.checkDayOfWeek(today, DAYS.MONDAY))
@@ -215,7 +214,7 @@ class CronService {
 						REDIS_KEY.CoinPriceGraph,
 						priceGraph,
 					);
-					if (!updatedGraph) return;
+					if (updatedGraph) logger.error(ERROR_MSG.COIN_PRICE_UPDATION);
 
 					logger.info(
 						`Coin price record saved for ${today}: ${currentCoinPrice}`,
