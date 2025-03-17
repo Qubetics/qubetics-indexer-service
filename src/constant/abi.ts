@@ -1295,6 +1295,29 @@ export const ERC721ABI: any = [
 		stateMutability: 'nonpayable',
 		type: 'function',
 	},
+	{
+		inputs: [
+			{
+				internalType: 'address',
+				name: 'to',
+				type: 'address',
+			},
+			{
+				internalType: 'uint256',
+				name: 'tokenId',
+				type: 'uint256',
+			},
+			{
+				internalType: 'string',
+				name: 'tokenURI',
+				type: 'string',
+			},
+		],
+		name: 'safeMint',
+		outputs: [],
+		stateMutability: 'nonpayable',
+		type: 'function',
+	},
 ];
 
 export const ERC1155ABI: any = [
