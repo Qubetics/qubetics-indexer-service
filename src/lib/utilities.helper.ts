@@ -396,19 +396,19 @@ export async function formatTheDate(getDateTime: any) {
 	return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
 }
 
-export function deepCopy<T>(obj:T):T {
+export function deepCopy<T>(obj: T): T {
 	// for faster clone (*note: only work on nodejs 17+)
 	// @ts-expect-error structuredClone is not supported in below nodejs v17
-	if(global.structuredClone) return structuredClone(obj);
+	if (global.structuredClone) return structuredClone(obj);
 
-    if (obj === null || typeof obj !== 'object') return obj;
-    if (Array.isArray(obj)) return obj.map(deepCopy) as T;
-    
-    const copy = {} as T;
-    for (const key in obj) {
-        if (obj.hasOwnProperty(key)) {
-            copy[key] = deepCopy(obj[key]);
-        }
-    }
-    return copy;
+	if (obj === null || typeof obj !== 'object') return obj;
+	if (Array.isArray(obj)) return obj.map(deepCopy) as T;
+
+	const copy = {} as T;
+	for (const key in obj) {
+		if (obj.hasOwnProperty(key)) {
+			copy[key] = deepCopy(obj[key]);
+		}
+	}
+	return copy;
 }

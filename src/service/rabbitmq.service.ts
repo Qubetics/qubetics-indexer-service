@@ -367,9 +367,10 @@ class RabbitMq {
 								);
 							if (isSuccess) {
 								// Retrieve the block count from Redis or the database
-								let blockCount = await RedisService.getString<number>(
-									REDIS_KEY.BLOCKS_COUNT,
-								);
+								let blockCount =
+									await RedisService.getString<number>(
+										REDIS_KEY.BLOCKS_COUNT,
+									);
 
 								if (!blockCount) {
 									// First time, get the count from the database

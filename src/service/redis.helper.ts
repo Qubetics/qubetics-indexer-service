@@ -71,7 +71,7 @@ class RedisService {
 	}
 
 	// get the string data from redis
-	public async getString<T>(key: string):Promise<T> {
+	public async getString<T>(key: string): Promise<T> {
 		try {
 			const res = (await this.client.get(key)) as string;
 			return JSON.parse(res);

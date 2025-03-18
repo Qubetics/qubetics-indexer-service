@@ -3,7 +3,12 @@ import axios, { AxiosInstance } from 'axios';
 import * as cron from 'cron';
 import { months } from 'moment';
 import { CURRENT_DEFAULT_COIN_PRICE, DAYS } from '../constant/constants';
-import { CONST_NAME, ERROR_MSG, QUEUE_NAME, REDIS_KEY } from '../constant/response';
+import {
+	CONST_NAME,
+	ERROR_MSG,
+	QUEUE_NAME,
+	REDIS_KEY,
+} from '../constant/response';
 import ExlorerHelper from '../helper/explorer.helper';
 
 import socketHelper from '../helper/socket.helper';
@@ -101,7 +106,7 @@ class CronService {
 			const date = new Date(today.getFullYear(), today.getMonth() - i, 1);
 			monthly.push({
 				date: date.toISOString(),
-				value: 0
+				value: 0,
 			});
 		}
 
@@ -111,7 +116,7 @@ class CronService {
 			date.setDate(today.getDate() - i);
 			daily.push({
 				date: date.toISOString(),
-				value: 0
+				value: 0,
 			});
 		}
 
@@ -126,12 +131,15 @@ class CronService {
 	private restorePriceDaysGraph(daysData: DatePoint[], price: number) {
 		let coinPrice = price;
 		// not side-effects
-		return deepCopy(daysData).reverse().map((point: DatePoint): DatePoint => {
-			point.value = coinPrice;
-			if (this.checkDayOfWeek(point.date, DAYS.MONDAY)) coinPrice -= (coinPrice * 10) / 100;
-			return point;
-		});
-	};
+		return deepCopy(daysData)
+			.reverse()
+			.map((point: DatePoint): DatePoint => {
+				point.value = coinPrice;
+				if (this.checkDayOfWeek(point.date, DAYS.MONDAY))
+					coinPrice -= (coinPrice * 10) / 100;
+				return point;
+			});
+	}
 
 	/**
 	 * restore previous coin price points
@@ -141,13 +149,17 @@ class CronService {
 	private restorePriceMonthsGraph(monthsData: DatePoint[], price: number) {
 		let coinPrice = price;
 		// not side-effects
-		return deepCopy(monthsData).reverse().map((point: DatePoint): DatePoint => {
-			point.value = coinPrice > CURRENT_DEFAULT_COIN_PRICE ? coinPrice : CURRENT_DEFAULT_COIN_PRICE;
-			coinPrice -= (((coinPrice * 10) / 100) * 4);
-			return point;
-		});
+		return deepCopy(monthsData)
+			.reverse()
+			.map((point: DatePoint): DatePoint => {
+				point.value =
+					coinPrice > CURRENT_DEFAULT_COIN_PRICE
+						? coinPrice
+						: CURRENT_DEFAULT_COIN_PRICE;
+				coinPrice -= ((coinPrice * 10) / 100) * 4;
+				return point;
+			});
 	}
-
 
 	/**
 	 * restore the graph history points
@@ -155,16 +167,29 @@ class CronService {
 	 */
 	private async restoreGraphs() {
 		try {
-			let priceGraph = await redisHelper.getString<GraphPayload>(REDIS_KEY.CoinPriceGraph);
+			let priceGraph = await redisHelper.getString<GraphPayload>(
+				REDIS_KEY.CoinPriceGraph,
+			);
 			// if stats is already generated then don't restore again
 			if (priceGraph) return false;
-			const tokenPrice = (await redisHelper.getString<number>(REDIS_KEY.COIN_PRICE)) || CURRENT_DEFAULT_COIN_PRICE;
+			const tokenPrice =
+				(await redisHelper.getString<number>(REDIS_KEY.COIN_PRICE)) ||
+				CURRENT_DEFAULT_COIN_PRICE;
 
 			priceGraph = this.generateDatePoints();
-			const daysData = this.restorePriceDaysGraph(priceGraph.daily, tokenPrice);
-			const monthsData = this.restorePriceMonthsGraph(priceGraph.monthly, tokenPrice);
+			const daysData = this.restorePriceDaysGraph(
+				priceGraph.daily,
+				tokenPrice,
+			);
+			const monthsData = this.restorePriceMonthsGraph(
+				priceGraph.monthly,
+				tokenPrice,
+			);
 
-			await redisHelper.setString(REDIS_KEY.CoinPriceGraph, { daily: daysData, monthly: monthsData });
+			await redisHelper.setString(REDIS_KEY.CoinPriceGraph, {
+				daily: daysData,
+				monthly: monthsData,
+			});
 			return true;
 		} catch (err) {
 			console.log('Error while restoring graph: ', err);
@@ -174,7 +199,6 @@ class CronService {
 
 	public async coinPriceGraphUpdation() {
 		try {
-
 			await this.restoreGraphs();
 
 			/**
@@ -185,8 +209,14 @@ class CronService {
 			new CronJob(
 				'1 0 * * *',
 				async () => {
-					const priceGraph = await redisHelper.getString<GraphPayload>(REDIS_KEY.CoinPriceGraph);
-					const currentCoinPrice = (await redisHelper.getString<number>(REDIS_KEY.COIN_PRICE)) || CURRENT_DEFAULT_COIN_PRICE;
+					const priceGraph =
+						await redisHelper.getString<GraphPayload>(
+							REDIS_KEY.CoinPriceGraph,
+						);
+					const currentCoinPrice =
+						(await redisHelper.getString<number>(
+							REDIS_KEY.COIN_PRICE,
+						)) || CURRENT_DEFAULT_COIN_PRICE;
 
 					const date = new Date();
 					const today = date.toISOString();
@@ -208,13 +238,13 @@ class CronService {
 					} else if (this.checkDayOfWeek(today, DAYS.MONDAY))
 						priceGraph.monthly[0].value = currentCoinPrice;
 
-
 					// Save updated history back to Redis
 					const updatedGraph = await redisHelper.setString(
 						REDIS_KEY.CoinPriceGraph,
 						priceGraph,
 					);
-					if (updatedGraph) logger.error(ERROR_MSG.COIN_PRICE_UPDATION);
+					if (updatedGraph)
+						logger.error(ERROR_MSG.COIN_PRICE_UPDATION);
 
 					logger.info(
 						`Coin price record saved for ${today}: ${currentCoinPrice}`,
