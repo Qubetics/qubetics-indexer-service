@@ -7,7 +7,7 @@ on:
 
 jobs:
   deploy_qubetics_indexer:
-    uses: ./.github/workflows/indexer-service.yaml
+    uses: ./.github/workflows/qubetics-indexer-service.yaml
     with:
       SWR_ORGANIZATION: testnet-qubetics
       ARGOCD_BRANCH: testnet_v2
