@@ -10,10 +10,10 @@ jobs:
     uses: ./.github/workflows/qubetics-indexer-service.yaml
     with:
       SWR_ORGANIZATION: testnet-qubetics
-      ARGOCD_BRANCH: testnet_v2
+      ARGOCD_BRANCH: testnet
       HUAWEI_REGION: 'ap-southeast-3'
       ARGOCD_REPOSITORY: Qubetics/argocd-qubetics
-      DEPLOYMENT_PATH: Indexer/qubetics-indexer-deployment.yaml
+      DEPLOYMENT_PATH: Indexer/indexer-deployment.yaml
       HUAWEI_IMAGE: testnet-qubetics-indexer
       DOCKER_USERNAME: ap-southeast-3@BQG9INQF0BKVHSNQOLJG
       ENV: ${{ vars.TESTNET_QUBETICS_INDEXER_ENV }}
