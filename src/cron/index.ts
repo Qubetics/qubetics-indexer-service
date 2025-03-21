@@ -397,6 +397,61 @@ class CronService {
 			return false;
 		}
 	}
+
+	public syncOldBlocks() {
+		console.log('Syncing Old Blocks');
+		let processing = false;
+		new CronJob(
+			'*/5 * * * * *', // will run every 1  seconds.
+			async () => {
+				if (!processing) {
+					processing = true;
+					await this.processOldBlock();
+					processing = false;
+				}
+			},
+			null,
+			true,
+			'America/Los_Angeles',
+		);
+	}
+
+	async processOldBlock() {
+		try {
+			// const latestBlock = await web3Helper.getBlockNumber();
+			const lastBlock = BigInt(1).toString();
+			console.log('processOldBlock', lastBlock);
+			const updateBlock = await RedisService.getString<number>(
+				CONST_NAME.LATEST_OLD_BLOCK,
+			);
+			console.log('updateBlock', updateBlock);
+
+			if (!updateBlock) {
+				await RedisService.setString(
+					CONST_NAME.LATEST_OLD_BLOCK,
+					+lastBlock,
+				);
+			}
+			console.log('updateBlock', updateBlock);
+
+			const latestBlockNo = Number(updateBlock);
+
+			const nextBlock = +updateBlock + 1;
+
+			const blockQueue = `${QUEUE_NAME.DOWNTIME_BLOCK}`;
+			RabbitMqService.enqueueData(blockQueue, latestBlockNo.toString());
+
+			await RedisService.setString(
+				CONST_NAME.LATEST_OLD_BLOCK,
+				nextBlock,
+			);
+
+			return true;
+		} catch (err) {
+			console.log('Error while saving blocks processBlock In CRON', err);
+			return false;
+		}
+	}
 }
 
 export default new CronService();

@@ -118,7 +118,7 @@ class ProcessHelper {
 				// timestamp: Number(block?.timestamp) * CONST_NAME.THOUSAND,
 				timestamp: new Date(Number(block?.timestamp) * 1000),
 			};
-
+			console.log(blockExtractedData, 'blockExtractedData');
 			if (transactions.length) {
 				console.log('We are enqueing TrX....');
 				rabbitmqService.enqueueData(
