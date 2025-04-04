@@ -51,7 +51,7 @@ class ExlorerHelper {
 			if (error.code === 'P2002') {
 				console.log('----ooo---');
 				return {
-					error: false,
+					error: true,
 					message: RES_MSG.BLOCK_ADDED,
 					data: { isAdded: true },
 				};
