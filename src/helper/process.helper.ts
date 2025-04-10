@@ -679,11 +679,16 @@ class ProcessHelper {
 						i <= Number(newBlock) + 1;
 						i += 1
 					) {
+						const latestOnChainBlock =
+							await Web3SocketHelper.web3Ws.eth.getBlockNumber();
+
+						if (i <= latestOnChainBlock) {
+							RabbitMqService.enqueueData(
+								QUEUE_NAME.DOWNTIME_BLOCK,
+								i.toString(),
+							);
+						}
 						// saving missed block to downtime block Queue
-						RabbitMqService.enqueueData(
-							QUEUE_NAME.DOWNTIME_BLOCK,
-							i.toString(),
-						);
 					}
 				} else logger.info('Socket service is uptodate.');
 			}
