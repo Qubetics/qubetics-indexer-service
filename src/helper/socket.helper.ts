@@ -516,7 +516,7 @@ class SocketHelper {
 			const currentDateByHour = new Date();
 
 			const oneHourAgo = new Date();
-			oneHourAgo.setHours(oneHourAgo.getHours() - 7);
+			oneHourAgo.setHours(oneHourAgo.getHours() - 6);
 			const startDateByHour = formatDate(oneHourAgo);
 
 			graphData = (await getHourlyTxQuery(
