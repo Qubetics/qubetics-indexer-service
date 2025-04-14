@@ -34,20 +34,24 @@ import {
 } from './query.helper';
 class SocketHelper {
 	async emitSocket(key: string) {
-		if (key === REDIS_KEY.CONTRACT_DEPLOY_GRAPH) {
-			// await this.handleContractDeployGraphData(
-			// 	SOCKET_EVENT.CONTRACT_DEPLOYED_TX,
-			// );
-		} else if (key === REDIS_KEY.COIN_TRANSFER_GRAPH) {
-			// await this.coinTransferGraphData(
-			// 	SOCKET_EVENT.COIN_TRANSFER_TX,
-			// 	// TRANSACTION_TYPE.COIN_TRANSFER,
-			// );
-		} else if (key === REDIS_KEY.ACCOUNT_GRAPH) {
-			// await this.handleAccountData(SOCKET_EVENT.ACCOUNT_TX);
-		} else if (key === REDIS_KEY.TOKEN_GRAPH) {
-			// await this.handleTokenData(SOCKET_EVENT.TOKEN_TX);
-		} else if (key === REDIS_KEY.TPS_GRAPH) {
+		// if (key === REDIS_KEY.CONTRACT_DEPLOY_GRAPH) {
+		// 	// await this.handleContractDeployGraphData(
+		// 	// 	SOCKET_EVENT.CONTRACT_DEPLOYED_TX,
+		// 	// );
+		// } else if (key === REDIS_KEY.COIN_TRANSFER_GRAPH) {
+		// 	// await this.coinTransferGraphData(
+		// 	// 	SOCKET_EVENT.COIN_TRANSFER_TX,
+		// 	// 	// TRANSACTION_TYPE.COIN_TRANSFER,
+		// 	// );
+		// } else if (key === REDIS_KEY.ACCOUNT_GRAPH) {
+		// 	// await this.handleAccountData(SOCKET_EVENT.ACCOUNT_TX);
+		// } else if (key === REDIS_KEY.TOKEN_GRAPH) {
+		// 	// await this.handleTokenData(SOCKET_EVENT.TOKEN_TX);
+		// } else if (key === REDIS_KEY.TPS_GRAPH) {
+		// 	await this.handleAllTxData(SOCKET_EVENT.ALL_TRANSACTIONS);
+		// }
+
+		if (key === REDIS_KEY.TPS_GRAPH) {
 			await this.handleAllTxData(SOCKET_EVENT.ALL_TRANSACTIONS);
 		}
 	}
