@@ -49,7 +49,7 @@ class RabbitMq {
 		this.consumeDownTimeBlocks(this.channel);
 		this.consumeErrorBlocks();
 		this.consumeValidatorDetails();
-		this.consumeStats();
+		// this.consumeStats();
 		// this.consumeMissingMissingMethods();
 	}
 
