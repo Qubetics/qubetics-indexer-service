@@ -113,7 +113,7 @@ class ExlorerHelper {
 				data,
 			});
 
-			await SocketHelper.emitSocket(REDIS_KEY.COIN_TRANSFER_GRAPH);
+			// await SocketHelper.emitSocket(REDIS_KEY.COIN_TRANSFER_GRAPH);
 
 			if (saveRes)
 				return {
@@ -177,7 +177,7 @@ class ExlorerHelper {
 		try {
 			await Promise.all(userData.map(this.processUserData));
 
-			await SocketHelper.emitSocket(REDIS_KEY.ACCOUNT_GRAPH);
+			// await SocketHelper.emitSocket(REDIS_KEY.ACCOUNT_GRAPH);
 			return {
 				error: false,
 				message: RES_MSG.USER_ADDED,
@@ -203,7 +203,7 @@ class ExlorerHelper {
 				skipDuplicates: true,
 			});
 
-			SocketHelper.emitSocket(REDIS_KEY.CONTRACT_DEPLOY_GRAPH);
+			// SocketHelper.emitSocket(REDIS_KEY.CONTRACT_DEPLOY_GRAPH);
 
 			if (saved.count) {
 				await this.upsertHolder({
