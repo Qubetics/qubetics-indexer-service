@@ -1,4 +1,5 @@
-import { ERC20ABI, ERC721ABI } from '../constant/abi';
+import { ethers } from 'ethers';
+import { ERC1155ABI, ERC20ABI, ERC721ABI } from '../constant/abi';
 import {
 	RES_MSG,
 	REDIS_KEY,
@@ -27,7 +28,7 @@ import {
 } from '../service/index';
 import rabbitmqService from '../service/rabbitmq.service';
 import explorerHelper from './explorer.helper';
-import { Web3SocketHelper } from './web3.helper';
+import Web3Helper, { Web3SocketHelper } from './web3.helper';
 
 class ProcessHelper {
 	/**
@@ -45,7 +46,6 @@ class ProcessHelper {
 					const blockQueue = `${QUEUE_NAME.BLOCKS}_${latestBlockNo
 						.toString()
 						.slice(-1)}`;
-
 					this.processblock(
 						latestBlockNo,
 						QUEUE_NAME.TRANSACTIONS,
@@ -94,10 +94,7 @@ class ProcessHelper {
 				blockno,
 				true,
 			);
-			// console.log('blockFROM', block);
 			const transactions = block?.transactions || [];
-
-			// const {block, transactions } = await this.getBlockDetails(blockno);
 			const transactionsArr = [];
 
 			const blockExtractedData = {
@@ -121,20 +118,20 @@ class ProcessHelper {
 				// timestamp: Number(block?.timestamp) * CONST_NAME.THOUSAND,
 				timestamp: new Date(Number(block?.timestamp) * 1000),
 			};
-
-			// console.log('blockExtractedData', blockExtractedData);
-			// send stats update (transaction)
-			if (transactions.length)
+			console.log(blockExtractedData, 'blockExtractedData');
+			if (transactions.length) {
+				console.log('We are enqueing TrX....');
 				rabbitmqService.enqueueData(
 					QUEUE_NAME.STATS_UPDATE,
 					JSON.stringify({
 						type: REDIS_KEY.TxHistory,
 						date: blockExtractedData.timestamp
-							? blockExtractedData.timestamp
+							? new Date(blockExtractedData.timestamp).getTime()
 							: Date.now(),
 						txnCount: transactions.length,
 					}),
 				);
+			}
 
 			if (blockQueue)
 				RabbitMqService.enqueueData(
@@ -163,18 +160,14 @@ class ProcessHelper {
 			// contract and coin transafer transactions
 			const _txns = { contractDeployment: 0, coin: 0 };
 
-			/* eslint-disable no-restricted-syntax */
 			/* eslint-disable no-await-in-loop */
-			for (let i = 0; i < transactions.length; i += 1) {
-				const gasPrice = Number(
-					transactions[i]?.gasPrice || CONST_NAME.ZERO,
-				);
-				const gas = transactions[i]?.gas || CONST_NAME.ZERO;
+			// Disable the rule for the next line
+			// eslint-disable-next-line no-restricted-syntax
+			for (const element of transactions) {
+				const gasPrice = Number(element?.gasPrice || CONST_NAME.ZERO);
+				const gas = element?.gas || CONST_NAME.ZERO;
 				const txFee = (gas * gasPrice) / CONST_NAME.POWER;
-				const txnType = txType(
-					`${transactions[i].to}`,
-					transactions[i].input,
-				);
+				const txnType = txType(`${element.to}`, element.input);
 
 				if (txnType === TRANSACTION_TYPE.COIN_TRANSFER) _txns.coin++;
 				else if (txnType === TRANSACTION_TYPE.CONTRACT_CREATION)
@@ -187,24 +180,22 @@ class ProcessHelper {
 					createdAt: new Date(),
 					txFee: exp(`${txFee}`),
 					blockhash: block?.hash,
-					input: transactions[i].input,
-					txhash: transactions[i]?.hash,
+					input: element.input,
+					txhash: element?.hash,
 					contractAddress: CONST_NAME.NA,
 					timestamp: new Date(Number(block?.timestamp) * 1000),
 					blocknumber: Number(block.number),
 					token: CONST_NAME.ZERO.toString(),
-					fromAddress: transactions[i]?.from,
+					fromAddress: element?.from,
 					status: TRANSACTION_STATUS.PENDING,
-					toAddress: transactions[i]?.to || CONST_NAME.NA,
+					toAddress: element?.to || CONST_NAME.NA,
 					type: txnType,
-					value: exp(
-						`${Number(transactions[i]?.value) / CONST_NAME.POWER}`,
-					),
+					value: exp(`${Number(element?.value) / CONST_NAME.POWER}`),
 				};
 
 				const txReceipt =
 					await Web3SocketHelper.web3Ws.eth.getTransactionReceipt(
-						transactions[i].hash,
+						element.hash,
 					);
 
 				if (txReceipt) {
@@ -218,7 +209,7 @@ class ProcessHelper {
 					txExtractedData.logs = txReceipt.logs || [];
 				} else {
 					const savedPendingTransaction =
-						await RedisService.getString(REDIS_KEY.PENDING_TX);
+						await RedisService.getString<any>(REDIS_KEY.PENDING_TX);
 					savedPendingTransaction.push(txExtractedData);
 					await RedisService.setString(
 						REDIS_KEY.PENDING_TX,
@@ -226,7 +217,6 @@ class ProcessHelper {
 					);
 				}
 				transactionsArr.push(txExtractedData);
-				console.log(txExtractedData, 'txExtractedData');
 				if (txQueue)
 					RabbitMqService.enqueueData(
 						txQueue,
@@ -241,7 +231,7 @@ class ProcessHelper {
 					JSON.stringify({
 						type: REDIS_KEY.CoinTransferTxHistory,
 						date: blockExtractedData.timestamp
-							? blockExtractedData.timestamp
+							? new Date(blockExtractedData.timestamp).getTime()
 							: Date.now(),
 						txnCount: _txns.coin,
 					}),
@@ -286,7 +276,6 @@ class ProcessHelper {
 	async processTransactions(tx: ITransactionPayload) {
 		try {
 			const transactions = { ...tx };
-			console.log('Transaction: ', transactions?.blockhash);
 			rabbitmqService.enqueueData(
 				QUEUE_NAME.STATS_UPDATE,
 				JSON.stringify({
@@ -345,7 +334,6 @@ class ProcessHelper {
 					break;
 
 				case TRANSACTION_TYPE.COIN_TRANSFER:
-					console.log('COIN_TRANSFER CASE: ', `${tx.txhash}`);
 					/* Coin Transfer Transaction Count Saving Code space */
 					await this.handleCoinTransfer(tx);
 					break;
@@ -498,8 +486,19 @@ class ProcessHelper {
 						updatedAt: new Date(tx.timestamp).toISOString(),
 					},
 				});
-				console.log('data', data);
 			}
+
+			// const methodSignature = topics[0].substring(0, 10);
+			const methodSignature = tx.input ? tx.input.slice(0, 10) : '';
+
+			let method = methodSignature;
+			if (contractType.type !== CONTRACT_TYPE.UNKNOWN) {
+				method = Web3Helper.getEventValue(
+					methodSignature,
+					contractType.type,
+				);
+			}
+
 			if (tx?.logs?.length) {
 				for (let i = 0; i < tx?.logs?.length; i += 1) {
 					const topics = tx?.logs[i].topics;
@@ -512,8 +511,6 @@ class ProcessHelper {
 						Web3SocketHelper.web3Ws.utils.toChecksumAddress(
 							`0x${topics[2].substring(26, topics[2].length)}`,
 						);
-
-					const methodSignature = topics[0].substring(0, 10);
 
 					// let method: string = (await explorerHelper.getEventValue(
 					// 	methodSignature,
@@ -537,18 +534,23 @@ class ProcessHelper {
 							},
 						});
 					}
-					const tokenbalanceTo = await contractType.contract.methods
-						.balanceOf(toAddress)
-						.call();
 
-					const tokenbalancefrom = await contractType.contract.methods
-						.balanceOf(fromAddress)
-						.call();
+					// if (
+					// 	tx.toAddress !== toAddress &&
+					// 	method === 'transfer' &&
+					// 	contractType.type === CONTRACT_TYPE.ERC20
+					// ) {
+					// 	await explorerHelper.updateTransactionTable(
+					// 		tx.txhash,
+					// 		tx.toAddress,
+					// 		toAddress,
+					// 	);
+					// }
 
 					const contractLogData: IContractLogs = {
 						logs: JSON.stringify(tx.logs),
 						topics,
-						method: '',
+						method,
 						gasFee: tx.gas,
 						methodSignature,
 						txHash: tx.txhash,
@@ -562,23 +564,56 @@ class ProcessHelper {
 					const logsRes =
 						await explorerHelper.saveContractLogs(contractLogData);
 
-
 					if (await explorerHelper.ifContractExist(tx.toAddress)) {
 						await explorerHelper.updateContractExec(tx.toAddress);
 					}
+					let fromRes: any;
+					let toRes: any;
 
-					const fromRes = await explorerHelper.upsertHolder({
-						address: tx.fromAddress,
-						contractAddress: tx.toAddress,
-						tokenBalance: exp(`${tokenbalancefrom}`),
-					});
-					const toRes = await explorerHelper.upsertHolder({
-						address: tx.toAddress,
-						contractAddress: tx.toAddress,
-						tokenBalance: exp(`${tokenbalanceTo}`),
+					if (
+						fromAddress !==
+						'0x0000000000000000000000000000000000000000'
+					) {
+						const tokenbalancefrom =
+							await contractType.contract.methods
+								.balanceOf(fromAddress)
+								.call();
+
+						fromRes = await explorerHelper.upsertHolder({
+							address: fromAddress,
+							contractAddress: tx.toAddress,
+							tokenBalance: exp(`${tokenbalancefrom}`),
+						});
+					}
+					if (fromAddress !== toAddress) {
+						const tokenbalanceTo =
+							await contractType.contract.methods
+								.balanceOf(toAddress)
+								.call();
+						toRes = await explorerHelper.upsertHolder({
+							address: toAddress,
+							contractAddress: tx.toAddress,
+							tokenBalance: exp(`${tokenbalanceTo}`),
+						});
+					}
+
+					let totalSupply: number;
+					try {
+						totalSupply = Number(
+							await contractType?.contract?.methods
+								?.totalSupply()
+								.call(),
+						);
+					} catch (error) {
+						totalSupply = 0;
+					}
+
+					await explorerHelper.updateToken({
+						contractAddress: tx?.toAddress,
+						totalSupply: noExponent(totalSupply),
 					});
 
-					if (logsRes.error || fromRes.error || toRes.error)
+					if (logsRes?.error || fromRes?.error || toRes?.error)
 						throw new Error(
 							'Error while saving contract execution details',
 						);
@@ -644,11 +679,16 @@ class ProcessHelper {
 						i <= Number(newBlock) + 1;
 						i += 1
 					) {
+						const latestOnChainBlock =
+							await Web3SocketHelper.web3Ws.eth.getBlockNumber();
+
+						if (i <= latestOnChainBlock) {
+							RabbitMqService.enqueueData(
+								QUEUE_NAME.DOWNTIME_BLOCK,
+								i.toString(),
+							);
+						}
 						// saving missed block to downtime block Queue
-						RabbitMqService.enqueueData(
-							QUEUE_NAME.DOWNTIME_BLOCK,
-							i.toString(),
-						);
 					}
 				} else logger.info('Socket service is uptodate.');
 			}
@@ -668,14 +708,15 @@ class ProcessHelper {
 				QUEUE_NAME.TRANSACTIONS,
 				null,
 				false,
-				true,
+				false,
 			);
 			if (res?.block?.blocknumber) {
 				await explorerHelper.saveBlockData(res.block);
 				return true;
 			}
-			throw new Error('');
+			return false;
 		} catch (error) {
+			console.log('saveDowntimeAndErrBlock Error', error);
 			return false;
 		}
 	}
@@ -702,14 +743,48 @@ class ProcessHelper {
 				ERC721ABI,
 				contractAddress,
 			);
-			const isERC721 = await this.checkERC721(contractAddress, contract);
-			if (isERC721)
+			// const isERC721 = await this.checkERC721(contractAddress, contract);
+			// if (isERC721)
+			// 	return {
+			// 		contract,
+			// 		type: CONTRACT_TYPE.ERC721,
+			// 	};
+
+			// contract = new Web3SocketHelper.web3Ws.eth.Contract(
+			// 	ERC1155ABI,
+			// 	contractAddress,
+			// );
+			// const isERC1155 = await this.checkERC1155(
+			// 	contractAddress,
+			// 	contract,
+			// );
+
+			// if (isERC1155)
+			// 	return {
+			// 		contract,
+			// 		type: CONTRACT_TYPE.ERC1155,
+			// 	};
+
+			const checkContractType =
+				await this.checkContractType(contractAddress);
+			if (checkContractType) {
+				if (checkContractType.type === 'ERC-721') {
+					contract = new Web3SocketHelper.web3Ws.eth.Contract(
+						ERC721ABI,
+						contractAddress,
+					);
+				} else if (checkContractType.type === 'ERC-1155') {
+					contract = new Web3SocketHelper.web3Ws.eth.Contract(
+						ERC1155ABI,
+						contractAddress,
+					);
+				}
+
 				return {
 					contract,
-					type: CONTRACT_TYPE.ERC721,
+					type: checkContractType.type,
 				};
-
-			// const event = contract.call({ anonymous: false }, log);
+			}
 
 			return {
 				contract,
@@ -803,6 +878,64 @@ class ProcessHelper {
 			return true;
 		} catch (error) {
 			logger.error('error while calculating and updating fee:', error);
+			return false;
+		}
+	}
+
+	async checkERC1155(_contractAddress: any, contract: any) {
+		try {
+			console.log('ERC1155Checking', _contractAddress);
+			return {
+				contract,
+				state: await contract.methods
+					.supportsInterface('0xd9b67a26')
+					.call(),
+			};
+		} catch (err) {
+			return false;
+		}
+	}
+
+	async checkContractType(contractAddress: string) {
+		const provider = new ethers.JsonRpcProvider(environment.nodeLink);
+
+		const abi = [
+			'function supportsInterface(bytes4 interfaceId) external view returns (bool)',
+		];
+		const ERC721_INTERFACE_ID = '0x80ac58cd'; // IERC721
+		const ERC1155_INTERFACE_ID = '0xd9b67a26'; // IERC1155
+		const contract = new ethers.Contract(contractAddress, abi, provider);
+
+		try {
+			const isERC721 =
+				await contract.supportsInterface(ERC721_INTERFACE_ID);
+			const isERC1155 =
+				await contract.supportsInterface(ERC1155_INTERFACE_ID);
+
+			console.log('supportsInterface(ERC-721):', isERC721);
+			console.log('supportsInterface(ERC-1155):', isERC1155);
+
+			if (isERC1155) {
+				console.log('The contract is ERC-1155.');
+				return {
+					contract,
+					type: CONTRACT_TYPE.ERC1155,
+				};
+			}
+			if (isERC721) {
+				console.log('The contract is ERC-721.');
+				return {
+					contract,
+					type: CONTRACT_TYPE.ERC721,
+				};
+			}
+			console.log('The contract is neither ERC-721 nor ERC-1155.');
+			return {
+				contract,
+				type: CONTRACT_TYPE.UNKNOWN,
+			};
+		} catch (error) {
+			console.error('Error checking contract type:', error);
 			return false;
 		}
 	}

@@ -18,7 +18,7 @@ class RabbitMq {
 
 	public async startServer() {
 		try {
-			const res = await this.connect();
+			const res = await this.connect(); // Ensure `connect` is awaited if it's a Promise
 			this.channel = res;
 			Object.values(QUEUE_NAME).forEach((queue) => {
 				this.channel.assertQueue(queue, {
@@ -26,58 +26,137 @@ class RabbitMq {
 				});
 			});
 
+			// Assert additional BLOCKS_* queues
 			for (let i = 0; i < 10; i += 1) {
 				this.channel.assertQueue(`${QUEUE_NAME.BLOCKS}_${i}`, {
-					durable: false,
+					durable: false, // Set to true for persistent queues
 				});
 			}
-			this.channel.prefetch(5);
-			this.consumeBlocks();
-			this.consumeUsers();
-			this.consumeAllTransaction();
-			this.consumeMissingBlocks();
-			this.consumeDownTimeBlocks();
-			this.consumeErrorBlocks();
-			this.consumeValidatorDetails();
-			this.consumeStats();
-
+			this.channel.prefetch(1);
+			this.startConsumers();
 			return true;
 		} catch (error) {
-			console.error('Error while connecting to RabbitMQ: ', error);
+			console.error('Error while connecting to RabbitMQ:', error);
 			return false;
 		}
 	}
 
+	public startConsumers() {
+		this.consumeBlocks(this.channel);
+		this.consumeUsers();
+		this.consumeAllTransaction(this.channel);
+		this.consumeMissingBlocks();
+		this.consumeDownTimeBlocks(this.channel);
+		this.consumeErrorBlocks();
+		this.consumeValidatorDetails();
+		this.consumeStats();
+		// this.consumeMissingMissingMethods();
+	}
+
 	public connect(): Promise<amqp.Channel> {
-		const RECONNECT_DELAY = 5000;
+		const RECONNECT_DELAY = 3000;
+		const connectionOptions = { heartbeat: 30 }; // Heartbeat interval in seconds
+
 		return new Promise((resolve, reject) => {
-			const attemptConnection = () => {
-				amqp.connect(environment.rabbitMq, (err, connection) => {
-					if (err) {
-						console.error('Error connecting to RabbitMQ:', err);
-						reject(err);
-						return;
-					}
-
-					connection.on('error', (error) => {
-						console.error(
-							'RabbitMQ connection error:',
-							error.message,
-						);
-						setTimeout(attemptConnection, RECONNECT_DELAY);
-					});
-
-					connection.createChannel((error: Error, channel) => {
-						if (error) {
-							console.error('Error creating channel:', error);
-							reject(error);
+			const attemptConnection = (reConsume: boolean = false) => {
+				amqp.connect(
+					environment.rabbitMq,
+					connectionOptions,
+					(err, connection) => {
+						if (err) {
+							logger.error('Error connecting to RabbitMQ:', err);
+							reject(err);
 							return;
 						}
 
-						logger.info('RabbitMQ connection created');
-						resolve(channel);
-					});
-				});
+						// Handle connection errors
+						connection.on('error', (error) => {
+							logger.error('RabbitMQ connection error:', error);
+							// setTimeout(
+							// 	() => attemptConnection(true),
+							// 	RECONNECT_DELAY,
+							// );
+						});
+
+						// Handle connection closure
+						connection.on('close', (error) => {
+							logger.warn('RabbitMQ connection closed:', error);
+							setTimeout(
+								() => attemptConnection(true),
+								RECONNECT_DELAY,
+							);
+						});
+
+						// Function to create and handle channel
+						const createChannel = () => {
+							connection.createChannel(
+								(error: Error, channel) => {
+									if (error) {
+										logger.error(
+											'Error creating channel:',
+											error,
+										);
+										reject(error);
+										return;
+									}
+
+									this.channel = channel;
+
+									// Handle channel errors
+									channel.on('error', (chanError) => {
+										logger.error(
+											'RabbitMQ channel error:',
+											chanError,
+										);
+										setTimeout(
+											() => attemptConnection(true),
+											RECONNECT_DELAY,
+										);
+										// setTimeout(createChannel, 1000);
+									});
+
+									// Handle channel closure and recreate it
+									channel.on('close', (channelError) => {
+										logger.warn(
+											'RabbitMQ channel closed, recreating...',
+											channelError,
+										);
+										setTimeout(
+											() => attemptConnection(true),
+											RECONNECT_DELAY,
+										);
+										// setTimeout(createChannel, 1000);
+									});
+
+									channel.on('return', (msg) => {
+										console.error(
+											'Message Returned Chnnale:',
+											msg.content.toString(),
+										);
+										setTimeout(
+											() => attemptConnection(true),
+											RECONNECT_DELAY,
+										);
+										// setTimeout(createChannel, 1000);
+									});
+
+									// Re-consume messages if necessary
+									if (reConsume) {
+										this.startConsumers();
+									}
+
+									logger.info(
+										'RabbitMQ channel created successfully',
+									);
+									resolve(channel);
+								},
+							);
+						};
+
+						// Create the initial channel
+						createChannel();
+					},
+				);
 			};
 
 			attemptConnection();
@@ -99,7 +178,10 @@ class RabbitMq {
 			this.channel?.sendToQueue(queue, Buffer.from(data));
 			return true;
 		} catch (error) {
-			logger.error('Error while enqueuing data into queue: ', error);
+			logger.error(
+				`Error while enqueuing data into queue name: ${queue}`,
+				error,
+			);
 			return false;
 		}
 	}
@@ -107,33 +189,37 @@ class RabbitMq {
 	/**
 	 * For consuming all type of transactions
 	 */
-	public consumeAllTransaction() {
-		this.channel?.consume(
-			QUEUE_NAME.TRANSACTIONS,
-			async (message: amqp.Message | null) => {
-				if (message) {
-					const txData = JSON.parse(message.content.toString());
-					const txRes =
-						await processHelper.processTransactions(txData);
+	public consumeAllTransaction(channel: amqp.Channel) {
+		try {
+			channel?.consume(
+				QUEUE_NAME.TRANSACTIONS,
+				async (message: amqp.Message | null) => {
+					if (message) {
+						try {
+							const txData = JSON.parse(
+								message.content.toString(),
+							);
+							const txRes =
+								await processHelper.processTransactions(txData);
 
-					console.log(
-						'txRes  after processing transaction : ',
-						txRes,
-					);
-
-					if (txRes.error) {
-						this.enqueueData(
-							QUEUE_NAME.ERROR_BLOCK,
-							txData.blocknumber.toString(),
-						);
+							if (txRes.error) {
+								this.enqueueData(
+									QUEUE_NAME.ERROR_BLOCK,
+									txData.blocknumber.toString(),
+								);
+							}
+							channel?.ack(message);
+						} catch (error) {
+							console.log('consumeAllTransaction Error', error);
+							channel?.ack(message);
+						}
 					}
-					console.log('acknowledging the queue for tx ..');
-
-					this.channel?.ack(message);
-				}
-			},
-			{ noAck: false },
-		);
+				},
+				{ noAck: false },
+			);
+		} catch (error) {
+			console.log('consumeAllTransaction Error In last', error);
+		}
 	}
 
 	/**
@@ -144,10 +230,15 @@ class RabbitMq {
 			QUEUE_NAME.SAVE_USERS,
 			async (message: amqp.Message | null) => {
 				if (message) {
-					await explorerHelper.userSave(
-						JSON.parse(message.content.toString()),
-					);
-					this.channel?.ack(message);
+					try {
+						await explorerHelper.userSave(
+							JSON.parse(message.content.toString()),
+						);
+						this.channel?.ack(message);
+					} catch (error) {
+						console.log('consumeUsers Error', error);
+						this.channel?.ack(message);
+					}
 				}
 			},
 			{ noAck: false },
@@ -158,26 +249,44 @@ class RabbitMq {
 	 * For consuming the Missed blocks
 	 */
 	public consumeMissingBlocks(): void {
-		this.channel?.consume(
-			QUEUE_NAME.MISSING_BLOCK,
-			async (message: amqp.Message | null) => {
-				if (message) {
-					const blockNumber = Number(message.content.toString());
-					const isSuccess =
-						await processHelper.saveDowntimeAndErrBlock(
-							blockNumber,
-						);
-					if (!isSuccess && blockNumber) {
-						this.enqueueData(
-							QUEUE_NAME.ERROR_BLOCK,
-							blockNumber.toString(),
-						);
+		try {
+			this.channel?.consume(
+				QUEUE_NAME.MISSING_BLOCK,
+				async (message: amqp.Message | null) => {
+					console.log(
+						'consumeMissingBlocks_message',
+						message?.content.toString(),
+					);
+
+					if (message) {
+						try {
+							const blockNumber = Number(
+								message.content.toString(),
+							);
+							const isSuccess =
+								await processHelper.saveDowntimeAndErrBlock(
+									blockNumber,
+								);
+							if (!isSuccess && blockNumber) {
+								this.enqueueData(
+									QUEUE_NAME.ERROR_BLOCK,
+									blockNumber.toString(),
+								);
+							}
+							this.channel?.ack(message);
+						} catch (error) {
+							console.log('consumeMissingBlocks Error', error);
+							this.channel?.ack(message);
+						}
+					} else {
+						console.log('consumeMissingBlocks_message ELSE');
 					}
-					this.channel?.ack(message);
-				}
-			},
-			{ noAck: false },
-		);
+				},
+				{ noAck: false },
+			);
+		} catch (error) {
+			console.log('consumeMissingBlocks Error Last', error);
+		}
 	}
 
 	/**
@@ -188,11 +297,16 @@ class RabbitMq {
 			QUEUE_NAME.VALIDATOR_DETAIL,
 			async (message: amqp.Message | null) => {
 				if (message) {
-					const validatorString = message.content.toString();
-					const validator: IValidator = JSON.parse(validatorString);
-					await explorerHelper.saveValidatorData(validator);
-
-					this.channel?.ack(message);
+					try {
+						const validatorString = message.content.toString();
+						const validator: IValidator =
+							JSON.parse(validatorString);
+						await explorerHelper.saveValidatorData(validator);
+						this.channel?.ack(message);
+					} catch (error) {
+						console.log('consumeValidatorDetails Error', error);
+						this.channel?.ack(message);
+					}
 				}
 			},
 			{ noAck: false },
@@ -206,17 +320,24 @@ class RabbitMq {
 		this.channel?.consume(
 			QUEUE_NAME.ERROR_BLOCK,
 			async (message: amqp.Message | null) => {
-				if (message) {
-					const blockNumber = Number(message.content.toString());
+				console.log(
+					'consumeErrorBlocks_message',
+					message?.content.toString(),
+				);
 
-					await processHelper.saveDowntimeAndErrBlock(blockNumber);
-					// if (!isSuccess) {
-					// 	this.enqueueData(
-					// 		QUEUE_NAME.ERROR_BLOCK,
-					// 		blockNumber.toString(),
-					// 	);
-					// }
-					this.channel?.ack(message);
+				if (message) {
+					try {
+						const blockNumber = Number(message.content.toString());
+						await processHelper.saveDowntimeAndErrBlock(
+							blockNumber,
+						);
+						this.channel?.ack(message);
+					} catch (error) {
+						console.log('consumeErrorBlocks Error', error);
+						this.channel?.ack(message);
+					}
+				} else {
+					console.log('consumeErrorBlocks_message ELSE');
 				}
 			},
 			{ noAck: false },
@@ -226,117 +347,168 @@ class RabbitMq {
 	/**
 	 * Handle blocks one by one when server is down
 	 */
-	consumeDownTimeBlocks(): void {
-		this.channel?.consume(
-			QUEUE_NAME.DOWNTIME_BLOCK,
-			async (message: amqp.Message | null) => {
-				if (message) {
-					const blockNumber = Number(message.content.toString());
-					const isSuccess =
-						await processHelper.saveDowntimeAndErrBlock(
-							blockNumber,
-						);
-					if (isSuccess) {
-						// Retrieve the block count from Redis or the database
-						let blockCount = await RedisService.getString(
-							REDIS_KEY.BLOCKS_COUNT,
-						);
-
-						if (!blockCount) {
-							// First time, get the count from the database
-							blockCount = await prisma.blocks.count();
-							await RedisService.setString(
-								REDIS_KEY.BLOCKS_COUNT,
-								blockCount,
-							);
-						} else {
-							// Increment the block count
-							blockCount = Number(blockCount) + 1;
-							await RedisService.setString(
-								REDIS_KEY.BLOCKS_COUNT,
-								blockCount,
-							);
-						}
-					}
-					console.log('Downtime Block (Saved): ', blockNumber);
-					if (!isSuccess) {
-						this.enqueueData(
-							QUEUE_NAME.ERROR_BLOCK,
-							blockNumber.toString(),
-						);
-					}
-					this.channel?.ack(message);
-				}
-			},
-			{ noAck: false },
-		);
-	}
-
-	public consumeBlocks(): void {
-		for (let i = 0; i < 10; i += 1) {
-			this.channel?.consume(
-				`${QUEUE_NAME.BLOCKS}_${i}`,
+	consumeDownTimeBlocks(channel: amqp.Channel): void {
+		try {
+			channel?.consume(
+				QUEUE_NAME.DOWNTIME_BLOCK,
 				async (message: amqp.Message | null) => {
+					console.log(
+						'consumeDownTimeBlocks_message',
+						message?.content.toString(),
+					);
 					if (message) {
-						const blockData = JSON.parse(
-							message.content.toString(),
-						);
-						const isSuccess =
-							await explorerHelper.saveBlockData(blockData);
-
-						if (isSuccess) {
-							// Retrieve the block count from Redis or the database
-							let blockCount = await RedisService.getString(
-								REDIS_KEY.BLOCKS_COUNT,
+						try {
+							const blockNumber = Number(
+								message.content.toString(),
 							);
-
-							if (!blockCount) {
-								// First time, get the count from the database
-								blockCount = await prisma.blocks.count();
-								await RedisService.setString(
-									REDIS_KEY.BLOCKS_COUNT,
-									blockCount,
+							const isSuccess =
+								await processHelper.saveDowntimeAndErrBlock(
+									blockNumber,
 								);
-							} else {
-								// Increment the block count
-								blockCount = Number(blockCount) + 1;
-								await RedisService.setString(
-									REDIS_KEY.BLOCKS_COUNT,
-									blockCount,
+							if (isSuccess) {
+								// Retrieve the block count from Redis or the database
+								let blockCount =
+									await RedisService.getString<number>(
+										REDIS_KEY.BLOCKS_COUNT,
+									);
+
+								if (!blockCount) {
+									// First time, get the count from the database
+									blockCount = await prisma.blocks.count();
+									await RedisService.setString(
+										REDIS_KEY.BLOCKS_COUNT,
+										blockCount.toString(),
+									);
+								} else {
+									// Increment the block count
+									blockCount = Number(blockCount) + 1;
+									await RedisService.setString(
+										REDIS_KEY.BLOCKS_COUNT,
+										blockCount.toString(),
+									);
+								}
+							}
+							console.log(
+								'Downtime Block (Saved): ',
+								blockNumber,
+							);
+							if (!isSuccess) {
+								this.enqueueData(
+									QUEUE_NAME.ERROR_BLOCK,
+									blockNumber.toString(),
 								);
 							}
+							channel?.ack(message);
+						} catch (error) {
+							console.log('consumeDownTimeBlocks Error', error);
+							channel?.nack(message, false, false); // Do not requeue
 						}
-						if (isSuccess?.error && blockData?.blocknumber) {
-							this.enqueueData(
-								QUEUE_NAME.ERROR_BLOCK,
-								blockData.blocknumber.toString(),
-							);
-						}
-						this.channel?.ack(message);
+					} else {
+						console.log('consumeDownTimeBlocks_message ELSE');
 					}
 				},
 				{ noAck: false },
 			);
+		} catch (error) {
+			console.log('consumeDownTimeBlocks Error In last', error);
+		}
+	}
+
+	public consumeBlocks(channel: amqp.Channel): void {
+		try {
+			for (let i = 0; i < 10; i += 1) {
+				channel?.consume(
+					`${QUEUE_NAME.BLOCKS}_${i}`,
+					async (message: amqp.Message | null) => {
+						setTimeout(async () => {
+							if (message) {
+								try {
+									const blockData = JSON.parse(
+										message.content.toString(),
+									);
+									const isSuccess =
+										await explorerHelper.saveBlockData(
+											blockData,
+										);
+
+									if (!isSuccess.error) {
+										// Retrieve the block count from Redis or the database
+										let blockCount =
+											await RedisService.getString(
+												REDIS_KEY.BLOCKS_COUNT,
+											);
+
+										if (!blockCount) {
+											// First time, get the count from the database
+											blockCount =
+												await prisma.blocks.count();
+											await RedisService.setString(
+												REDIS_KEY.BLOCKS_COUNT,
+												blockCount,
+											);
+										} else {
+											// Increment the block count
+											blockCount = Number(blockCount) + 1;
+											await RedisService.setString(
+												REDIS_KEY.BLOCKS_COUNT,
+												blockCount,
+											);
+										}
+									}
+									if (
+										isSuccess?.error &&
+										blockData?.blocknumber
+									) {
+										await this.enqueueData(
+											QUEUE_NAME.ERROR_BLOCK,
+											blockData.blocknumber.toString(),
+										);
+									}
+
+									channel?.ack(message);
+								} catch (error) {
+									console.log('consumeBlocks Error', error);
+									channel?.nack(message, false, false); // Do not requeue
+								}
+							}
+						}, 5000);
+					},
+					{ noAck: false },
+				);
+			}
+		} catch (error) {
+			console.log('consumeBlocks Error In last', error);
 		}
 	}
 
 	consumeStats = () => {
-		this.channel.consume(
-			QUEUE_NAME.STATS_UPDATE,
-			(msg: amqp.Message | null) => {
-				if (!msg) return;
-				const message: StatsType = JSON.parse(
-					msg.content.toString('utf-8'),
-				);
-				console.log('STATS_UPDATE', message);
-				// update the latest count for data tables
-				countHelper.updateLatestCount(message);
+		try {
+			this.channel.consume(
+				QUEUE_NAME.STATS_UPDATE,
+				(msg: amqp.Message | null) => {
+					if (!msg) return;
+					try {
+						const message: StatsType = JSON.parse(
+							msg.content.toString('utf-8'),
+						);
+						console.log('Queued Stats Update Message: ', message);
 
-				// update the stats
-				if (!statsUpdater.updateInMemoryStats(message))
-					this.channel.ack(msg);
-			},
-		);
+						// update the stats
+						if (statsUpdater.updateInMemoryStats(message)) {
+							// update the latest count for data tables
+							countHelper.updateLatestCount(message);
+							this.channel.ack(msg);
+						}
+					} catch (error) {
+						console.log('consumeStats Error', error);
+						this.channel.nack(msg);
+					}
+				},
+				{ noAck: false },
+			);
+		} catch (error) {
+			console.log('consumeStats Error In last', error);
+		}
 	};
 }
 

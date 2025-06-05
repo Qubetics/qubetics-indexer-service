@@ -278,6 +278,7 @@ export interface Params {
 	totalValidator: number;
 	circulation_supply: number;
 	bondedRate: number;
+	total_supply: number;
 }
 
 export interface BlockHeader {

@@ -1,16 +1,31 @@
+import { AnyCnameRecord } from 'dns';
 import axios, { AxiosInstance } from 'axios';
 import * as cron from 'cron';
-import { CONST_NAME, QUEUE_NAME, REDIS_KEY } from '../constant/response';
+import { months } from 'moment';
+import { CURRENT_DEFAULT_COIN_PRICE, DAYS } from '../constant/constants';
+import {
+	CONST_NAME,
+	ERROR_MSG,
+	QUEUE_NAME,
+	REDIS_KEY,
+} from '../constant/response';
 import ExlorerHelper from '../helper/explorer.helper';
 
 import socketHelper from '../helper/socket.helper';
 import { calculateData, getValidatorsInfo } from '../helper/validator.helper';
 import web3Helper from '../helper/web3.helper';
+import logger from '../lib/logger';
+import { deepCopy } from '../lib/utilities.helper';
 import { RabbitMqService, RedisService } from '../service';
+import redisHelper from '../service/redis.helper';
 
 const { CronJob } = cron;
 const apiUrl = environment.evmHost;
 let apiRes: AxiosInstance;
+
+// types for stats
+type DatePoint = { date: string; value: number };
+type GraphPayload = { monthly: DatePoint[]; daily: DatePoint[] };
 
 class CronService {
 	constructor() {
@@ -23,6 +38,230 @@ class CronService {
 			// timeout: CONST_NAME.THOUSAND,
 			timeout: 5000,
 		});
+	}
+
+	public async scheduleCoinPriceUpdation() {
+		try {
+			// save the default price initially in cache(redis)
+			const coinPrice = await redisHelper.getString(REDIS_KEY.COIN_PRICE);
+			if (!coinPrice) {
+				logger.info('Initial coin price saved');
+				await redisHelper.setString(
+					REDIS_KEY.COIN_PRICE,
+					CURRENT_DEFAULT_COIN_PRICE,
+				);
+			}
+
+			logger.info('Price updation scheduled');
+			new CronJob(
+				'0 0 * * 1',
+				async () => {
+					logger.info('Price updation schedule running');
+					/**
+					 * get the price from cache if saved or otherwise
+					 * default hard coded price is used
+					 */
+					const savedPrice = await redisHelper.getString(
+						REDIS_KEY.COIN_PRICE,
+					);
+					let currentPrice = savedPrice
+						? Number(savedPrice)
+						: CURRENT_DEFAULT_COIN_PRICE;
+					currentPrice += (currentPrice * 10) / 100;
+
+					// save the updated price
+					redisHelper.setString(REDIS_KEY.COIN_PRICE, currentPrice);
+				},
+				null,
+				true,
+				'UTC',
+			);
+		} catch (err) {
+			console.error(
+				'Error while scheduling the coin price updation cron\n',
+				err,
+			);
+		}
+	}
+
+	/**
+	 * Check the days of the week (eg. Monday, Tuesday...)
+	 * @returns boolean
+	 */
+	private checkDayOfWeek(date: string | number, day: number) {
+		return new Date(date).getDay() === day;
+	}
+
+	/**
+	 * Generate months and days date points for restoring graphs
+	 * @returns GraphPayload
+	 */
+	private generateDatePoints(month = 11, day = 29): GraphPayload {
+		const today = new Date();
+		const monthly: { date: string; value: number }[] = [];
+		const daily: { date: string; value: number }[] = [];
+
+		// Generate past 11 months and current month first date points
+		for (let i = month; i >= 0; i--) {
+			const date = new Date(today.getFullYear(), today.getMonth() - i, 1);
+			monthly.push({
+				date: date.toISOString(),
+				value: 0,
+			});
+		}
+
+		// Generate current and previous 29 days point
+		for (let i = day; i >= 0; i--) {
+			const date = new Date();
+			date.setDate(today.getDate() - i);
+			daily.push({
+				date: date.toISOString(),
+				value: 0,
+			});
+		}
+
+		return { monthly, daily };
+	}
+
+	/**
+	 * restore previous coin price points
+	 * @param daysData
+	 * @returns DatePoint[]
+	 */
+	private restorePriceDaysGraph(daysData: DatePoint[], price: number) {
+		let coinPrice = price;
+		// not side-effects
+		return deepCopy(daysData)
+			.reverse()
+			.map((point: DatePoint): DatePoint => {
+				point.value = coinPrice;
+				if (this.checkDayOfWeek(point.date, DAYS.MONDAY))
+					coinPrice -= (coinPrice * 10) / 100;
+				return point;
+			});
+	}
+
+	/**
+	 * restore previous coin price points
+	 * @param monthsData
+	 * @returns DatePoint[]
+	 */
+	private restorePriceMonthsGraph(monthsData: DatePoint[], price: number) {
+		let coinPrice = price;
+		// not side-effects
+		return deepCopy(monthsData)
+			.reverse()
+			.map((point: DatePoint): DatePoint => {
+				point.value =
+					coinPrice > CURRENT_DEFAULT_COIN_PRICE
+						? coinPrice
+						: CURRENT_DEFAULT_COIN_PRICE;
+				coinPrice -= ((coinPrice * 10) / 100) * 4;
+				return point;
+			});
+	}
+
+	/**
+	 * restore the graph history points
+	 * @returns boolean
+	 */
+	private async restoreGraphs() {
+		try {
+			let priceGraph = await redisHelper.getString<GraphPayload>(
+				REDIS_KEY.CoinPriceGraph,
+			);
+			// if stats is already generated then don't restore again
+			if (priceGraph) return false;
+			const tokenPrice =
+				(await redisHelper.getString<number>(REDIS_KEY.COIN_PRICE)) ||
+				CURRENT_DEFAULT_COIN_PRICE;
+
+			priceGraph = this.generateDatePoints();
+			const daysData = this.restorePriceDaysGraph(
+				priceGraph.daily,
+				tokenPrice,
+			);
+			const monthsData = this.restorePriceMonthsGraph(
+				priceGraph.monthly,
+				tokenPrice,
+			);
+
+			await redisHelper.setString(REDIS_KEY.CoinPriceGraph, {
+				daily: daysData,
+				monthly: monthsData,
+			});
+			return true;
+		} catch (err) {
+			console.log('Error while restoring graph: ', err);
+			return false;
+		}
+	}
+
+	public async coinPriceGraphUpdation() {
+		try {
+			await this.restoreGraphs();
+
+			/**
+			 * schedule the cron to handle graph price update
+			 * NOTE: need to further work on it for implementing
+			 * more optimized method
+			 */
+			new CronJob(
+				'1 0 * * *',
+				async () => {
+					const priceGraph =
+						await redisHelper.getString<GraphPayload>(
+							REDIS_KEY.CoinPriceGraph,
+						);
+					const currentCoinPrice =
+						(await redisHelper.getString<number>(
+							REDIS_KEY.COIN_PRICE,
+						)) || CURRENT_DEFAULT_COIN_PRICE;
+
+					const date = new Date();
+					const today = date.toISOString();
+
+					priceGraph.daily.unshift({
+						date: today,
+						value: currentCoinPrice,
+					});
+
+					if (date.getDate() === 1) {
+						priceGraph.monthly.unshift({
+							date: today,
+							value: currentCoinPrice,
+						});
+
+						priceGraph.monthly.pop();
+
+						// only update the monthly price on monday
+					} else if (this.checkDayOfWeek(today, DAYS.MONDAY))
+						priceGraph.monthly[0].value = currentCoinPrice;
+
+					// Save updated history back to Redis
+					const updatedGraph = await redisHelper.setString(
+						REDIS_KEY.CoinPriceGraph,
+						priceGraph,
+					);
+					if (updatedGraph)
+						logger.error(ERROR_MSG.COIN_PRICE_UPDATION);
+
+					logger.info(
+						`Coin price record saved for ${today}: ${currentCoinPrice}`,
+					);
+				},
+				null,
+				true,
+				'UTC',
+			);
+
+			logger.info('Coin price history scheduler started.');
+		} catch (err) {
+			console.error(
+				'Error while updating the coin price graph cron\n',
+				err,
+			);
+		}
 	}
 
 	public checkPendingTransaction() {
@@ -57,6 +296,7 @@ class CronService {
 		// Call the function initially to start the scheduling
 		await fetchData();
 	}
+
 	// public checkValidators() {
 	// 	new CronJob(
 	// 		'*/3 * * * * *', // will run every 1 sec.
@@ -103,7 +343,7 @@ class CronService {
 			const latestBlock = await web3Helper.getBlockNumber();
 			const lastBlock = BigInt(latestBlock).toString();
 
-			const updateBlock = await RedisService.getString(
+			const updateBlock = await RedisService.getString<number>(
 				CONST_NAME.LATEST_BLOCK,
 			);
 
@@ -150,6 +390,61 @@ class CronService {
 					);
 				}
 			}
+
+			return true;
+		} catch (err) {
+			console.log('Error while saving blocks processBlock In CRON', err);
+			return false;
+		}
+	}
+
+	public syncOldBlocks() {
+		console.log('Syncing Old Blocks');
+		let processing = false;
+		new CronJob(
+			'*/5 * * * * *', // will run every 1  seconds.
+			async () => {
+				if (!processing) {
+					processing = true;
+					await this.processOldBlock();
+					processing = false;
+				}
+			},
+			null,
+			true,
+			'America/Los_Angeles',
+		);
+	}
+
+	async processOldBlock() {
+		try {
+			// const latestBlock = await web3Helper.getBlockNumber();
+			const lastBlock = BigInt(1).toString();
+			console.log('processOldBlock', lastBlock);
+			const updateBlock = await RedisService.getString<number>(
+				CONST_NAME.LATEST_OLD_BLOCK,
+			);
+			console.log('updateBlock', updateBlock);
+
+			if (!updateBlock) {
+				await RedisService.setString(
+					CONST_NAME.LATEST_OLD_BLOCK,
+					+lastBlock,
+				);
+			}
+			console.log('updateBlock', updateBlock);
+
+			const latestBlockNo = Number(updateBlock);
+
+			const nextBlock = +updateBlock + 1;
+
+			const blockQueue = `${QUEUE_NAME.DOWNTIME_BLOCK}`;
+			RabbitMqService.enqueueData(blockQueue, latestBlockNo.toString());
+
+			await RedisService.setString(
+				CONST_NAME.LATEST_OLD_BLOCK,
+				nextBlock,
+			);
 
 			return true;
 		} catch (err) {

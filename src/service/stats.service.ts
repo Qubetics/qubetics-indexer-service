@@ -1,5 +1,3 @@
-// import { appendFile } from 'fs/promises';
-// import path from 'path';
 import { CronCommand, CronJob } from 'cron';
 import {
 	CRON_TIME,
@@ -27,6 +25,7 @@ import {
 	fillMissingMinutes,
 	formatDateForYear,
 	fillMissingDatesWithZeroByMonth,
+	formatTheDate,
 } from '../lib/utilities.helper';
 import redisHelper from './redis.helper';
 
@@ -44,6 +43,7 @@ class Stats {
 			let startDate = '';
 
 			const currentDate = new Date();
+			const getCurrentDate = await formatTheDate(currentDate);
 
 			const oneDayAgo = new Date();
 			oneDayAgo.setDate(oneDayAgo.getDate() - 1);
@@ -67,12 +67,13 @@ class Stats {
 			const fromDate = new Date(currentDate);
 			fromDate.setDate(fromDate.getDate() - daysAgo);
 			startDate = formatDateForDay(fromDate);
+			const fromMonth = await formatTheDate(fromDate);
 
 			graphData = (await prisma.$queryRaw`
 			  SELECT DATE_TRUNC('day', "timestamp") AS "day", COUNT(*)::int AS "count"
 			  FROM "Transactions"
-			  WHERE "timestamp" >= ${new Date(startDate)}
-				AND "timestamp" <= ${currentDate}
+			  WHERE "timestamp" >= ${fromMonth}::timestamp
+				AND "timestamp" <= ${getCurrentDate}::timestamp
 				
 			  GROUP BY "day"
 			  ORDER BY "day";
@@ -136,6 +137,7 @@ class Stats {
 			let startDate = '';
 
 			const currentDate = new Date();
+			const getCurrentDate = await formatTheDate(currentDate);
 
 			const currentDateFormated = formatDateByMin(new Date());
 			const oneHourAgo = new Date();
@@ -162,6 +164,7 @@ class Stats {
 			const oneDayAgo = new Date();
 			oneDayAgo.setDate(oneDayAgo.getDate() - 1);
 			startDate = formatDate(oneDayAgo);
+
 			graphData = (await prisma.$queryRaw`
 					SELECT DATE_TRUNC('hour', "createdAt") AS "hour", COUNT(*)::int AS "count"
 					FROM "Users"
@@ -181,12 +184,14 @@ class Stats {
 			const fromDate = new Date(currentDate);
 			fromDate.setDate(fromDate.getDate() - daysAgo);
 			startDate = formatDateForDay(fromDate);
+			console.log('startDateMONTH', startDate);
+			const fromMonth = await formatTheDate(fromDate);
 
 			graphData = (await prisma.$queryRaw`
 				  SELECT DATE_TRUNC('day', "createdAt") AS "day", COUNT(*)::int AS "count"
 				  FROM "Users"
-				  WHERE "createdAt" >= ${new Date(startDate)}
-					AND "createdAt" <= ${currentDate}
+				  WHERE "createdAt" >= ${fromMonth}::timestamp
+					AND "createdAt" <= ${getCurrentDate}::timestamp
 					
 				  GROUP BY "day"
 				  ORDER BY "day";
@@ -201,12 +206,16 @@ class Stats {
 			const oneYearAgo = new Date();
 			oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
 			startDate = formatDateForYear(oneYearAgo);
+			const fromYear = await formatTheDate(oneYearAgo);
+
+			console.log('getCurrentDate', getCurrentDate);
+			console.log(fromYear, 'fromYear');
 
 			graphData = (await prisma.$queryRaw`
 					SELECT DATE_TRUNC('month', "createdAt") AS "month", COUNT(*)::int AS "count"
 					FROM "Users"
-					WHERE "createdAt" >= ${new Date(startDate)}
-					AND "createdAt" <= ${currentDate}
+					WHERE "createdAt" >= ${fromYear}::timestamp
+					AND "createdAt" <= ${getCurrentDate}::timestamp
 					GROUP BY "month"
 					ORDER BY "month";
 				`) as Array<{ month: Date; count: number }>;
@@ -220,26 +229,12 @@ class Stats {
 			return {
 				key: REDIS_KEY.NewAccountHistory,
 				data: { hourly, mintue, daily, monthly },
-				// statsCurrents: {
-				// 	mintue: mintue[mintue.length - 1],
-				// 	hourly: hourly[hourly.length - 1],
-				// 	daily: daily[daily.length - 1],
-				// 	monthly: monthly[monthly.length - 1],
-				// },
 				statsCurrents: {
 					hourly: hourly[hourly.length - 1],
 					daily: daily[daily.length - 1],
 					monthly: monthly[monthly.length - 1],
 				},
 			};
-
-			// return {
-			// 	error: false,
-			// 	data: {
-			// 		finalData: finalData as Array<GraphData>,
-			// 		count: await prisma.users.count(),
-			// 	},
-			// };
 		} catch (err) {
 			return { key: null };
 		}
@@ -517,7 +512,6 @@ class Stats {
 					ORDER BY "hour";
 				`) as Array<{ hour: Date; count: number }>;
 
-
 			const hourly = await fillMissingDatesWithZeroByhr(
 				graphData,
 				new Date(startDate),
@@ -684,7 +678,6 @@ export class StatsUpdater {
 		const isStatsGenerated = await redisHelper.getString(
 			REDIS_KEY.StatsGenerated,
 		);
-		// const isStatsGenerated = 0;
 
 		if (Number(isStatsGenerated)) {
 			this.statsState = {
@@ -709,8 +702,6 @@ export class StatsUpdater {
 			// assign the current time stats records
 			const tempCurrent: { [key: string]: any } = {};
 			const currentTimeStamp = Date.now();
-			console.log(this.statsState);
-			
 			Object.keys(this.statsState).forEach((key) => {
 				const tempStats = this.statsState[key];
 				tempCurrent[key] = { current: {} };
@@ -739,13 +730,6 @@ export class StatsUpdater {
 							);
 
 							//    this.addNextDatePoint(shortInnerKey, key, newTimePoint.toString())
-							console.log(
-								'Recovery time point added for: ',
-								shortInnerKey,
-								key,
-								new Date(newTimePoint).toLocaleString(),
-							);
-
 							/**
 							 * new stats record for current timepoint
 							 * (this is generated due to there is a difference between
@@ -795,7 +779,6 @@ export class StatsUpdater {
 			this.stats.computeContractDeployHistory(),
 			this.stats.computeTxFeeSum(),
 		]);
-		console.log('vstatsDataList', statsDataList);
 		// if key is not null save the computed stats data
 		statsDataList.forEach((statsData: any) => {
 			this.statsState[statsData.key] = statsData.data;
@@ -816,13 +799,12 @@ export class StatsUpdater {
 	// Queue helper for processing latest stats updation
 	updateInMemoryStats = (txDetails: StatsType) => {
 		try {
-			// console.log('txDetails IN updateInMemoryStats', txDetails);
 			if (Object.keys(this.statsCurrents).length === 0) {
 				return false;
 			}
-
+			console.log('Stats Payload: ', txDetails);
 			const _currentRecords = this.statsCurrents[txDetails.type].current;
-
+			console.log('Stats Payload: ', _currentRecords);
 			Object.keys(_currentRecords).forEach((recordKey) => {
 				// get the record for current time point
 				const {
@@ -833,9 +815,6 @@ export class StatsUpdater {
 					data.count =
 						Number(data.count) +
 						(txDetails?.txnCount ? txDetails.txnCount : 1);
-
-				// debug logs
-				// appendFile(path.join(__dirname, 'date.txt'),`${JSON.stringify({ date: new Date(txDetails.date).toLocaleString(), end: new Date(end).toLocaleString(), flag: txDetails.date <= end })}-${recordKey}\n`);
 			});
 			return true;
 		} catch (err) {

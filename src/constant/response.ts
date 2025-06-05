@@ -35,6 +35,7 @@ export const ERROR_MSG = {
 	GET_CONTRACT_ERROR: 'error occured while fetching contract detail',
 	DECODE_PARAM_ERROR: 'error occured while decoding param',
 	GET_APR_ERROR: 'error occured while calculating apr value',
+	COIN_PRICE_UPDATION: 'Someting went wrong while updation coin price graph',
 };
 
 export const CONST_NAME = {
@@ -59,6 +60,7 @@ export const CONST_NAME = {
 	YEAR_MILI_SEC: 31536000000,
 	BLOCK_PER_YEAR: 365 * 24 * 60 * 60,
 	ETH_EXP: 10 ** 18,
+	LATEST_OLD_BLOCK: 'latestOldBlock',
 };
 
 export const QUEUE_NAME = {
@@ -71,6 +73,7 @@ export const QUEUE_NAME = {
 	VALIDATOR_DETAIL: 'VALIDATOR_DETAIL',
 	CONTRACT_AND_TOKENS: 'CONTRACT_AND_TOKENS',
 	STATS_UPDATE: 'STATS_UPDATE',
+	OLD_BLOCK: 'OLD_BLOCK',
 	// TOKEN: 'TOKEN',
 	// ADD_TX_HASHES: 'ADD_TX_HASHES',
 	// CONTRACT_LOGS: 'CONTRACT_LOGS',
@@ -103,6 +106,7 @@ export const REDIS_KEY = {
 	CONTRACT_DEPLOY_GRAPH: 'CONTRACT_DEPLOY_GRAPH_PAYLOAD',
 	MARKET_CAP_PRICE: 'MARKET_CAP_PRICE',
 	VALIDATOR_DATA: 'VALIDATOR_DATA',
+	COIN_PRICE: 'COIN_PRICE',
 
 	// stats
 	TxHistory: 'TxHistory',
@@ -111,6 +115,7 @@ export const REDIS_KEY = {
 	ContractDeploymentHistory: 'ContractDeploymentHistory',
 	StatsGenerated: 'StatsGenerated',
 	TxFeeHistory: 'TxFeeHistory',
+	CoinPriceGraph: 'CoinPriceGraph',
 
 	// counts
 	BLOCKS_COUNT: 'BLOCKS_COUNT',

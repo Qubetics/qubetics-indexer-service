@@ -125,7 +125,7 @@ export async function fillMissingDatesWithZeroByDay(
 	startDate: Date,
 	currentDateVal: Date,
 ) {
-	startDate.setDate(startDate.getDate() + 1);
+	startDate.setDate(startDate.getDate() + 1); // including startDate itself.
 	const dateMap = new Map(
 		data.map((item) => [item.day.toISOString(), item.count]),
 	);
@@ -383,4 +383,32 @@ export async function fillMissingDatesWithZeroByMonth(
 	}
 
 	return filledRecords;
+}
+
+export async function formatTheDate(getDateTime: any) {
+	const year = getDateTime.getUTCFullYear();
+	const month = String(getDateTime.getUTCMonth() + 1).padStart(2, '0'); // getMonth() is zero-based
+	const day = String(getDateTime.getUTCDate()).padStart(2, '0');
+	const hours = String(getDateTime.getUTCHours()).padStart(2, '0');
+	const minutes = String(getDateTime.getUTCMinutes()).padStart(2, '0');
+	const seconds = String(getDateTime.getUTCSeconds()).padStart(2, '0');
+
+	return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+}
+
+export function deepCopy<T>(obj: T): T {
+	// for faster clone (*note: only work on nodejs 17+)
+	// @ts-expect-error structuredClone is not supported in below nodejs v17
+	if (global.structuredClone) return structuredClone(obj);
+
+	if (obj === null || typeof obj !== 'object') return obj;
+	if (Array.isArray(obj)) return obj.map(deepCopy) as T;
+
+	const copy = {} as T;
+	for (const key in obj) {
+		if (obj.hasOwnProperty(key)) {
+			copy[key] = deepCopy(obj[key]);
+		}
+	}
+	return copy;
 }

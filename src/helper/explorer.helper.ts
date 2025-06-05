@@ -44,12 +44,14 @@ class ExlorerHelper {
 				message: RES_MSG.BLOCK_ADDED,
 				data: { isAdded: true },
 			};
-		} catch (err:any) {
-			console.log(err.message);
+		} catch (err: any) {
+			console.log(err.message, 'saveBlockData Error');
 			const error = JSON.parse(JSON.stringify(err));
+			console.log('errorCode', error.code);
 			if (error.code === 'P2002') {
+				console.log('----ooo---');
 				return {
-					error: false,
+					error: true,
 					message: RES_MSG.BLOCK_ADDED,
 					data: { isAdded: true },
 				};
@@ -111,7 +113,7 @@ class ExlorerHelper {
 				data,
 			});
 
-			await SocketHelper.emitSocket(REDIS_KEY.COIN_TRANSFER_GRAPH);
+			// await SocketHelper.emitSocket(REDIS_KEY.COIN_TRANSFER_GRAPH);
 
 			if (saveRes)
 				return {
@@ -150,6 +152,7 @@ class ExlorerHelper {
 						JSON.stringify({
 							type: REDIS_KEY.NewAccountHistory,
 							date: Date.now(),
+							txnCount: 1,
 						}),
 					);
 					await prisma.users.create({
@@ -174,7 +177,7 @@ class ExlorerHelper {
 		try {
 			await Promise.all(userData.map(this.processUserData));
 
-			await SocketHelper.emitSocket(REDIS_KEY.ACCOUNT_GRAPH);
+			// await SocketHelper.emitSocket(REDIS_KEY.ACCOUNT_GRAPH);
 			return {
 				error: false,
 				message: RES_MSG.USER_ADDED,
@@ -200,7 +203,7 @@ class ExlorerHelper {
 				skipDuplicates: true,
 			});
 
-			SocketHelper.emitSocket(REDIS_KEY.CONTRACT_DEPLOY_GRAPH);
+			// SocketHelper.emitSocket(REDIS_KEY.CONTRACT_DEPLOY_GRAPH);
 
 			if (saved.count) {
 				await this.upsertHolder({
@@ -399,6 +402,27 @@ class ExlorerHelper {
 		}
 	};
 
+	updateToken = async (tokenData: any): Promise<IESResponse> => {
+		try {
+			await prisma.tokens.update({
+				where: { contractAddress: tokenData.contractAddress },
+				data: tokenData,
+			});
+			return {
+				error: false,
+				message: RES_MSG.TOKEN_ADDED,
+				data: { isAdded: true },
+			};
+		} catch (err) {
+			console.error('error while saving token detail', err);
+			return {
+				error: true,
+				message: RES_MSG.BLOCK_ADDED_ERROR,
+				data: { isAdded: false },
+			};
+		}
+	};
+
 	saveTokenPriceByDate = async () => {
 		try {
 			const { symbol, currency, coinMarketApi, coinMarketKey } =
@@ -554,20 +578,16 @@ class ExlorerHelper {
 		| false
 	> => {
 		try {
-			let supply;
-			supply = await RedisService.getString(REDIS_KEY.CIRCULATING_SUPPLY);
-			supply = supply || 0;
-
-			let marketCap;
-			marketCap = await RedisService.getString(REDIS_KEY.MARKET_CAP);
-			marketCap = marketCap || 0;
-
-			let validatorData;
-			validatorData = await RedisService.getString(
-				REDIS_KEY.VALIDATOR_DATA,
-			);
-
-			validatorData = validatorData || '';
+			const supply =
+				(await RedisService.getString<number>(
+					REDIS_KEY.CIRCULATING_SUPPLY,
+				)) || 0;
+			const marketCap =
+				(await RedisService.getString<number>(REDIS_KEY.MARKET_CAP)) ||
+				0;
+			const validatorData =
+				(await RedisService.getString<any>(REDIS_KEY.VALIDATOR_DATA)) ||
+				'';
 
 			return {
 				supply,
@@ -654,7 +674,6 @@ class ExlorerHelper {
 		validatorData: IValidator,
 	): Promise<IESResponse> => {
 		try {
-			console.log('validatorData', validatorData);
 			const existingValidator = await prisma.validator.findUnique({
 				where: { address: validatorData.address },
 			});
@@ -733,6 +752,28 @@ class ExlorerHelper {
 			}
 			return false;
 		} catch {
+			return false;
+		}
+	};
+
+	updateTransactionTable = async (
+		txHash: string,
+		contractAddress: string,
+		toAddress: string,
+	) => {
+		try {
+			await prisma.transactions.update({
+				data: {
+					contractAddress,
+					toAddress,
+				},
+				where: {
+					txhash: txHash,
+				},
+			});
+			return true;
+		} catch (error) {
+			console.log('Error while update trxn table', error);
 			return false;
 		}
 	};

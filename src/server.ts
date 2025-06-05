@@ -52,10 +52,12 @@ app.init()
 		const instance = Web3SocketHelper.getInstance();
 		await instance.initializeWsConnection();
 		await countHelper.initializeCount();
-		
+
 		new StatsUpdater().start();
 		processHelper.subscribeBlocksWs();
 		processHelper.ProcessDowntimeBlock();
+		CronService.scheduleCoinPriceUpdation();
+		CronService.coinPriceGraphUpdation();
 		CronService.saveTokenPrice();
 		CronService.checkValidators();
 		CronService.updateGraph();
