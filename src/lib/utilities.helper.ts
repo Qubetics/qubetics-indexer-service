@@ -2,8 +2,8 @@ import crypto from 'crypto';
 import axios, { AxiosResponse, Method } from 'axios';
 import { TRANSACTION_TYPE } from '../constant/response';
 import { CoinMarketData, ITimeStamp } from '../interface/index';
+import { prisma } from './db';
 import logger from './logger';
-import { prisma } from '../lib/db';
 
 export function isEven(n: number) {
 	const res = n % 2 === 0;
