@@ -3,6 +3,7 @@ import axios, { AxiosResponse, Method } from 'axios';
 import { TRANSACTION_TYPE } from '../constant/response';
 import { CoinMarketData, ITimeStamp } from '../interface/index';
 import logger from './logger';
+import { prisma } from '../lib/db';
 
 export function isEven(n: number) {
 	const res = n % 2 === 0;
@@ -412,3 +413,19 @@ export function deepCopy<T>(obj: T): T {
 	}
 	return copy;
 }
+
+export const getGroupedTransactions = async (
+	from: Date,
+	to: Date,
+	interval: 'hour' | 'day' | 'month',
+): Promise<{ time: Date; count: number }[]> => {
+	const groupBy = interval;
+	const result = await prisma.$queryRaw<{ time: Date; count: number }[]>`
+    SELECT DATE_TRUNC(${groupBy}, "timestamp") AS time, COUNT(*)::int AS count
+    FROM "Transactions"
+    WHERE "timestamp" >= ${from} AND "timestamp" <= ${to}
+    GROUP BY time
+    ORDER BY time;
+  `;
+	return result;
+};

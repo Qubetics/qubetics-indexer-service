@@ -939,5 +939,41 @@ class ProcessHelper {
 			return false;
 		}
 	}
+
+	public async conusmeBlockTime(blockCount: number) {
+		try {
+			const currentBlock: any = await Web3Helper.getBlockNumber();
+			const blockNumbers = Array.from(
+				{ length: blockCount + 1 },
+				(_, i) => Number(currentBlock) - i,
+			);
+
+			// Fetch all blocks in parallel
+			const blocks = await Promise.all(
+				blockNumbers.map((num) =>
+					Web3Helper.getDetailByBlockNumber(num),
+				),
+			);
+
+			let totalDiff = 0;
+			for (let i = 0; i < blockCount; i++) {
+				totalDiff +=
+					+blocks[i].timestamp.toString() -
+					+blocks[i + 1].timestamp.toString();
+			}
+
+			const avg = totalDiff / blockCount;
+			console.log('totalDiff', avg, totalDiff, blockCount);
+			await RedisService.setStringWithExpiry(
+				REDIS_KEY.BLOCK_AVG_TIME,
+				avg.toFixed(2),
+				120,
+			);
+			return true;
+		} catch (error) {
+			console.log('Error ConsumeBlock', error);
+			return false;
+		}
+	}
 }
 export default new ProcessHelper();
