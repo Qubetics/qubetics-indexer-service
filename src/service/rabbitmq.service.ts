@@ -50,6 +50,8 @@ class RabbitMq {
 		this.consumeErrorBlocks();
 		this.consumeValidatorDetails();
 		this.consumeStats();
+		this.consumeBlockTimeQue(this.channel);
+
 		// this.consumeMissingMissingMethods();
 	}
 
@@ -502,6 +504,27 @@ class RabbitMq {
 					} catch (error) {
 						console.log('consumeStats Error', error);
 						this.channel.nack(msg);
+					}
+				},
+				{ noAck: false },
+			);
+		} catch (error) {
+			console.log('consumeStats Error In last', error);
+		}
+	};
+
+	consumeBlockTimeQue = (channel: amqp.Channel): void => {
+		try {
+			channel.consume(
+				QUEUE_NAME.BLOCK_TIME_QUE,
+				(msg: amqp.Message | null) => {
+					if (!msg) return;
+					try {
+						const message = msg?.content.toString() || 20;
+						processHelper.conusmeBlockTime(+message);
+					} catch (error) {
+						console.log('consumeStats Error', error);
+						channel?.ack(msg);
 					}
 				},
 				{ noAck: false },
