@@ -134,11 +134,21 @@ const calculateData = async (): Promise<
 			params.communityTax,
 		);
 
+		// const validatorData = {
+		// 	validator: params?.activeValidator,
+		// 	totalValidator: params?.totalValidator,
+		// 	bondedRate: params?.bondedRate,
+		// 	apy: apyValue,
+		// };
+
 		const validatorData = {
 			validator: params?.activeValidator,
 			totalValidator: params?.totalValidator,
 			bondedRate: params?.bondedRate,
 			apy: apyValue,
+			totalSupply: params?.total_supply,
+			inflation: Number(params?.inflation),
+			circulating_supply: params?.circulation_supply,
 		};
 
 		await RedisService.setString(
