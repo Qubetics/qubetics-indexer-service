@@ -292,7 +292,6 @@ class CronService {
 			await calculateData();
 			setTimeout(fetchData, 1 * 60 * 1000);
 		}
-
 		// Call the function initially to start the scheduling
 		await fetchData();
 	}

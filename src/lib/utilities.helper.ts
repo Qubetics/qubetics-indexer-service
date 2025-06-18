@@ -412,3 +412,21 @@ export function deepCopy<T>(obj: T): T {
 	}
 	return copy;
 }
+
+// export async function safeCall<T>(
+// 	fn: () => Promise<T>,
+// 	retries = 3,
+// 	delay = 300,
+// ): Promise<T | null> {
+// 	for (let attempt = 1; attempt <= retries; attempt++) {
+// 		try {
+// 			return await fn();
+// 		} catch (err: any) {
+// 			console.warn(`Attempt ${attempt} failed:`, err.message);
+// 			if (attempt === retries) return null;
+// 			await new Promise((r) => setTimeout(r, delay));
+// 			// return null;
+// 		}
+// 	}
+// 	return null;
+// }
