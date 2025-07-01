@@ -522,6 +522,7 @@ class RabbitMq {
 					try {
 						const message = msg?.content.toString() || 20;
 						processHelper.conusmeBlockTime(+message);
+						channel.ack(msg);
 					} catch (error) {
 						console.log('consumeStats Error', error);
 						channel?.ack(msg);
