@@ -429,9 +429,15 @@ class ExlorerHelper {
 				environment;
 			const params = {
 				symbol,
-				convert: currency,
+				convert: currency.toLowerCase(),
 			};
-
+			console.log(
+				coinMarketKey,
+				coinMarketApi,
+				currency,
+				symbol,
+				'Pralas',
+			);
 			const coinResult = (await fetchRequest(
 				coinMarketApi,
 				params,
@@ -451,7 +457,7 @@ class ExlorerHelper {
 				percentChange7d: number;
 				percentChange30d: number;
 			};
-
+			console.log('coinResult', coinResult);
 			const coinMarketResult = {
 				price: coinResult.price.toString(),
 				volume24h: coinResult.volume24h.toString(),
@@ -479,6 +485,11 @@ class ExlorerHelper {
 			await RedisService.setString(
 				REDIS_KEY.MARKET_CAP_PRICE,
 				JSON.stringify(coinMarketResult),
+			);
+
+			await RedisService.setString(
+				REDIS_KEY.COIN_PRICE,
+				JSON.stringify(coinResult.price),
 			);
 			await SocketHelper.emitSocket(REDIS_KEY.TOKEN_GRAPH);
 
