@@ -1,4 +1,4 @@
-import axios, { AxiosResponse, Method } from 'axios';
+import axios, { AxiosResponse, Method, AxiosInstance } from 'axios';
 import logger from '../lib/logger';
 
 const fetchRequest = async (
@@ -34,6 +34,11 @@ const fetchRequest = async (
 						percentChange30d:
 							res.data.data[symbol]?.quote?.USD
 								.percent_change_30d,
+						self_reported_market_cap:
+							res.data.data[symbol]?.self_reported_market_cap,
+						self_reported_circulating_supply:
+							res.data.data[symbol]
+								?.self_reported_circulating_supply,
 					};
 
 					resolve(coinMarketPrice);
