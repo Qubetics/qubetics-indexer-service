@@ -434,13 +434,7 @@ class ExlorerHelper {
 				symbol,
 				convert: currency.toLowerCase(),
 			};
-			console.log(
-				coinMarketKey,
-				coinMarketApi,
-				currency,
-				symbol,
-				'Pralas',
-			);
+
 			const coinResult = (await fetchRequest(
 				coinMarketApi,
 				params,
@@ -489,14 +483,23 @@ class ExlorerHelper {
 
 			const coinPrice = coinResult?.price ?? CURRENT_DEFAULT_COIN_PRICE;
 			const circulating_supply =
-				coinResult?.circulatingSupply ??
-				coinResult?.self_reported_circulating_supply ??
-				0;
+				coinResult?.circulatingSupply !== 0
+					? coinResult?.circulatingSupply
+					: coinResult?.self_reported_circulating_supply;
 			const marketCapital: number =
-				coinResult?.marketCap ??
-				coinResult?.self_reported_market_cap ??
-				coinPrice * circulating_supply;
+				coinResult?.marketCap !== 0
+					? coinResult?.marketCap
+					: coinResult?.self_reported_market_cap ??
+						coinPrice * circulating_supply;
 
+			console.log(
+				'coinPrice:',
+				coinPrice,
+				'circulating_supply:',
+				circulating_supply,
+				'marketCapital:',
+				marketCapital,
+			);
 			await prisma.coinmarketInfo.create({
 				data: coinMarketResult,
 			});
