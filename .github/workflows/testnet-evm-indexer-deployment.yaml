@@ -1,4 +1,4 @@
-name: '[prod] Deploy qubetics indexer'
+name: '[testnet] Deploy qubetics indexer'
 
 on: 
   push:
