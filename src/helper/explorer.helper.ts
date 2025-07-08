@@ -1,5 +1,6 @@
 import axios from 'axios';
 import {
+	CURRENT_DEFAULT_CIRCULATING_SUPPLY,
 	CURRENT_DEFAULT_COIN_PRICE,
 	VERIFICATION_TYPE,
 } from '../constant/constants';
@@ -482,45 +483,40 @@ class ExlorerHelper {
 			};
 
 			const coinPrice = coinResult?.price ?? CURRENT_DEFAULT_COIN_PRICE;
-			const circulating_supply =
-				coinResult?.circulatingSupply !== 0
-					? coinResult?.circulatingSupply
-					: coinResult?.self_reported_circulating_supply;
-			const marketCapital: number =
-				coinResult?.marketCap !== 0
-					? coinResult?.marketCap
-					: coinResult?.self_reported_market_cap ??
-						coinPrice * circulating_supply;
+			const circulating_supply = CURRENT_DEFAULT_CIRCULATING_SUPPLY;
+			const marketCapital = coinPrice * circulating_supply;
+			console.log({ coinPrice, circulating_supply, marketCapital });
+			/**
+			 * Uncomment from here
+			 */
+			// const circulating_supply =
+			// 	coinResult?.circulatingSupply !== 0
+			// 		? coinResult?.circulatingSupply
+			// 		: coinResult?.self_reported_circulating_supply;
+			// const marketCapital: number =
+			// 	coinResult?.marketCap !== 0
+			// 		? coinResult?.marketCap
+			// 		: coinResult?.self_reported_market_cap ??
+			// 			coinPrice * circulating_supply;
+			/**
+			 * Uncomment till here
+			 */
 
-			console.log(
-				'coinPrice:',
-				coinPrice,
-				'circulating_supply:',
-				circulating_supply,
-				'marketCapital:',
-				marketCapital,
-			);
 			await prisma.coinmarketInfo.create({
 				data: coinMarketResult,
 			});
 
-			await RedisService.setString(
-				REDIS_KEY.MARKET_CAP,
-				JSON.stringify(marketCapital),
-			);
+			await RedisService.setString(REDIS_KEY.MARKET_CAP, marketCapital);
 			await RedisService.setString(
 				REDIS_KEY.CIRCULATING_SUPPLY,
-				JSON.stringify(circulating_supply),
+				circulating_supply,
 			);
 			await RedisService.setString(
 				REDIS_KEY.MARKET_CAP_PRICE,
-				JSON.stringify(coinMarketResult),
+				coinMarketResult,
 			);
 
-			await RedisService.setString(
-				REDIS_KEY.COIN_PRICE,
-				JSON.stringify(coinPrice),
-			);
+			await RedisService.setString(REDIS_KEY.COIN_PRICE, coinPrice);
 			await SocketHelper.emitSocket(REDIS_KEY.TOKEN_GRAPH);
 
 			return true;

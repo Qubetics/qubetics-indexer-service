@@ -44,7 +44,7 @@ const fetchRequest = async (
 					resolve(coinMarketPrice);
 				})
 				.catch((err) => {
-					logger.error(err.response.data.status.error_message);
+					console.log('err fetchRequest', err);
 				});
 		} catch (err) {
 			logger.error(
