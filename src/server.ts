@@ -56,12 +56,14 @@ app.init()
 		new StatsUpdater().start();
 		processHelper.subscribeBlocksWs();
 		processHelper.ProcessDowntimeBlock();
-		CronService.scheduleCoinPriceUpdation();
 		CronService.coinPriceGraphUpdation();
 		CronService.saveTokenPrice();
 		CronService.checkValidators();
 		CronService.updateGraph();
 		CronService.checkPendingTransaction();
+
+		// TODO(CP1): Need to remove in future not needed now
+		// CronService.scheduleCoinPriceUpdation();
 
 		// processHelper.ProcessMissedBlockAndTxn();
 
