@@ -1,5 +1,6 @@
 import axios from 'axios';
 import {
+	CMC_PATHS,
 	CURRENT_DEFAULT_COIN_PRICE,
 	VERIFICATION_TYPE,
 } from '../constant/constants';
@@ -436,7 +437,7 @@ class ExlorerHelper {
 			};
 
 			const coinResult = (await fetchRequest(
-				coinMarketApi,
+				`${coinMarketApi}${CMC_PATHS.CRYPTOCURRENCY_QUOTES}${CMC_PATHS.LATEST}`,
 				params,
 				'get',
 				{
@@ -456,7 +457,7 @@ class ExlorerHelper {
 				self_reported_circulating_supply: number;
 				self_reported_market_cap: number;
 			};
-			console.log('coinResult', coinResult);
+
 
 			// For this example, let (C) = 10,000 USD / 1 BTC and let (S) = 17,000,000 BTC.
 
@@ -481,6 +482,10 @@ class ExlorerHelper {
 				currency,
 			};
 
+				logger.info('Price updation schedule running, Data below');
+				logger.info(coinMarketResult);
+				
+
 			const coinPrice = coinResult?.price ?? CURRENT_DEFAULT_COIN_PRICE;
 			const circulating_supply =
 				coinResult?.circulatingSupply !== 0
@@ -492,14 +497,6 @@ class ExlorerHelper {
 					: coinResult?.self_reported_market_cap ??
 						coinPrice * circulating_supply;
 
-			console.log(
-				'coinPrice:',
-				coinPrice,
-				'circulating_supply:',
-				circulating_supply,
-				'marketCapital:',
-				marketCapital,
-			);
 			await prisma.coinmarketInfo.create({
 				data: coinMarketResult,
 			});
@@ -525,7 +522,8 @@ class ExlorerHelper {
 
 			return true;
 		} catch (err) {
-			logger.error('unable to save token price', err);
+			logger.error('Unable to save token price.');
+			logger.error(err);
 			return false;
 		}
 	};
