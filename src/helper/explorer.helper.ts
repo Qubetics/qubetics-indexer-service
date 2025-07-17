@@ -427,12 +427,13 @@ class ExlorerHelper {
 		}
 	};
 
-	saveTokenPriceByDate = async () => {
+	// OPTIMISE | CLEANUP(CP1): Need to refactor the logic and api calls of below latest coin price updation routine, separate the saving logic to cache storage (redis) and null safty
+	saveLatestCoinPriceFromMarket = async () => {
 		try {
 			const { symbol, currency, coinMarketApi, coinMarketKey } =
 				environment;
 			const params = {
-				symbol,
+				symbol: symbol.toUpperCase(),
 				convert: currency.toLowerCase(),
 			};
 
@@ -520,11 +521,11 @@ class ExlorerHelper {
 			);
 			await SocketHelper.emitSocket(REDIS_KEY.TOKEN_GRAPH);
 
-			return true;
+			return {error: false, data: coinResult};
 		} catch (err) {
 			logger.error('Unable to save token price.');
-			logger.error(err);
-			return false;
+			console.error(err);
+			return {error: true, data: null};
 		}
 	};
 
