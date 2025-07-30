@@ -9,6 +9,10 @@ import logger from '../lib/logger';
 import { statsUpdater } from './stats.service';
 import { RedisService } from '.';
 
+/**
+ * [OPTIMISE | IMPORTANT | CLEANUP](Q1): Need to optimise and cleanup the consumer bindings
+ * and create separate exchanges and channels for different inter-related queue's
+ */
 class RabbitMq {
 	public channel: amqp.Channel;
 
@@ -177,8 +181,7 @@ class RabbitMq {
 	 */
 	public enqueueData(queue: string, data: string) {
 		try {
-			this.channel?.sendToQueue(queue, Buffer.from(data));
-			return true;
+			return this.channel?.sendToQueue(queue, Buffer.from(data));
 		} catch (error) {
 			logger.error(
 				`Error while enqueuing data into queue name: ${queue}`,
@@ -461,7 +464,7 @@ class RabbitMq {
 										isSuccess?.error &&
 										blockData?.blocknumber
 									) {
-										await this.enqueueData(
+										this.enqueueData(
 											QUEUE_NAME.ERROR_BLOCK,
 											blockData.blocknumber.toString(),
 										);
@@ -502,7 +505,7 @@ class RabbitMq {
 							this.channel.ack(msg);
 						}
 					} catch (error) {
-						console.log('consumeStats Error', error);
+						console.error('Error in Consumer(STATS_UPDATE):\n', error);
 						this.channel.nack(msg);
 					}
 				},

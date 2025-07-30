@@ -1,8 +1,8 @@
 import { AnyCnameRecord } from 'dns';
 import axios, { AxiosInstance } from 'axios';
 import * as cron from 'cron';
-import { months } from 'moment';
-import { CURRENT_DEFAULT_COIN_PRICE, DAYS } from '../constant/constants';
+import moment, { months } from 'moment';
+import { CURRENT_DEFAULT_COIN_PRICE, DATA_TIME_POINTS, DAYS, MILLI_IN_DAY, MILLI_IN_MIN, MILLI_IN_SEC, MILLI_UNITS, TIME_UNITS } from '../constant/constants';
 import {
 	CONST_NAME,
 	ERROR_MSG,
@@ -12,8 +12,10 @@ import {
 import ExlorerHelper from '../helper/explorer.helper';
 
 import socketHelper from '../helper/socket.helper';
+import { generateZeroFilledChartPoints, getCoinPriceDataFromMarket } from '../helper/stats.helper';
 import { calculateData, getValidatorsInfo } from '../helper/validator.helper';
 import web3Helper from '../helper/web3.helper';
+import { ChartPoint } from '../interface/types';
 import logger from '../lib/logger';
 import { deepCopy } from '../lib/utilities.helper';
 import { RabbitMqService, RedisService } from '../service';
@@ -197,59 +199,140 @@ class CronService {
 		}
 	}
 
-	public async coinPriceGraphUpdation() {
+	public async coinPriceGraphUpdationSchedule() {
 		try {
-			await this.restoreGraphs();
+
+			// TODO(REF CP1): Needed need to remove in future
+			// await this.restoreGraphs();
 
 			/**
 			 * schedule the cron to handle graph price update
 			 * NOTE: need to further work on it for implementing
 			 * more optimized method
+			 * currently zero filled is generated if date is missing from the data
+			 * fetched from coin market cap api zero filled values will be generated
+			 * for that date
 			 */
+
+			/**
+			 * TODO(CP2): Need to removed hardcoded values like month and days count in below logic
+			 * in future and need to implement types for below implementation
+			 */
+
+			/**
+			 * TODO(CP3): Also need to create a cron time file or make the cron time dynamic
+			 * so we can change it easily without any changes in code and 1 default value will be
+			 * available in the code
+			 *
+			 * TODO(GE1): Need to optimise the try catch exception handling uses
+			 */
+
+			/**
+			 * CLEANUP(CP2): Need to refactor the below job routine (assignment, breaking into smaller reusable methods and condtionals)
+			 **/
+
+			/**
+			 * Job callback (also can be used without any job schedule)
+			 **/
+			const jobCallback = async () => {
+				try {
+
+				const {error, data} = await ExlorerHelper.saveLatestCoinPriceFromMarket();
+
+				logger.info('Price updation schedule running.');
+				const currentTimePoint = new Date();
+				const priceChartData: { daily: ChartPoint[], monthly: ChartPoint[] } = { daily: [], monthly: [] };
+
+				// Current day is not included
+				const pastTimePoint = moment().utc().subtract(29, 'day');
+				// Get day wise price data points from third party provider
+				const pastDaysPriceChartPoint = await getCoinPriceDataFromMarket(pastTimePoint.toISOString(), currentTimePoint.toISOString());
+
+
+				// Day wise price data points
+				const daysZeroFilledPoints = generateZeroFilledChartPoints(pastTimePoint.toISOString(), 30 - pastDaysPriceChartPoint.length);
+				priceChartData.daily = daysZeroFilledPoints.concat(pastDaysPriceChartPoint).reverse();
+
+				// Current month is not included
+				const pastMonthTimePoint = moment().utc().subtract(11, 'month');
+
+				// Get month wise price data points from third party provider
+				const pastMonthsPriceChartPoint = await getCoinPriceDataFromMarket(pastMonthTimePoint.toISOString(), currentTimePoint.toISOString(), DATA_TIME_POINTS.MONTH);
+
+				const monthlyZeroFilledPoints = generateZeroFilledChartPoints(pastMonthTimePoint.toISOString(), 12 - pastMonthsPriceChartPoint.length, 'month');
+
+				// Only work if third party provider not giving monthly data points (due to plan or other issues)
+				if (pastMonthsPriceChartPoint.length === 0) {
+					monthlyZeroFilledPoints[monthlyZeroFilledPoints.length - 1].value = error ? pastDaysPriceChartPoint[pastDaysPriceChartPoint.length - 1].value : data?.price;
+					priceChartData.monthly = monthlyZeroFilledPoints.reverse();
+				} else
+					priceChartData.monthly = monthlyZeroFilledPoints.concat(pastMonthsPriceChartPoint).reverse()
+
+				// update the latest price for today
+				if (data?.price)
+					priceChartData.daily[0].value = data.price;
+
+				// TODO(KEY1): Need to change all redis keys and queue names and other services related
+				// keys need to capital for better code formatting.
+				await redisHelper.setString(REDIS_KEY.CoinPriceGraph, priceChartData);
+				console.log("Chart points saved: ", priceChartData);
+				logger.info("Cron Schedule price chart updation completed");
+				} catch (err) {
+					console.error("Price chart job routine exception:\n", err);
+				}
+
+
+				// TODO(REF CP1) Need to removed in future if not used (keeping it just in case)
+				// const priceGraph =
+				// 	await redisHelper.getString<GraphPayload>(
+				// 		REDIS_KEY.CoinPriceGraph,
+				// 	);
+				// const currentCoinPrice =
+				// 	(await redisHelper.getString<number>(
+				// 		REDIS_KEY.COIN_PRICE,
+				// 	)) || CURRENT_DEFAULT_COIN_PRICE;
+
+				// const date = new Date();
+				// const today = date.toISOString();
+
+				// priceGraph.daily.unshift({
+				// 	date: today,
+				// 	value: currentCoinPrice,
+				// });
+
+				// if (date.getDate() === 1) {
+				// 	priceGraph.monthly.unshift({
+				// 		date: today,
+				// 		value: currentCoinPrice,
+				// 	});
+
+				// 	priceGraph.monthly.pop();
+
+				// 	// only update the monthly price on monday
+				// } else if (this.checkDayOfWeek(today, DAYS.MONDAY))
+				// 	priceGraph.monthly[0].value = currentCoinPrice;
+
+				// // Save updated history back to Redis
+				// const updatedGraph = await redisHelper.setString(
+				// 	REDIS_KEY.CoinPriceGraph,
+				// 	priceGraph,
+				// );
+				// if (updatedGraph)
+				// 	logger.error(ERROR_MSG.COIN_PRICE_UPDATION);
+
+				// logger.info(
+				// 	`Coin price record saved for ${today}: ${currentCoinPrice}`,
+				// );
+			}
+
+			// If price chart data not generated, save it initially on service startup
+			const chartData = await redisHelper.getString(REDIS_KEY.CoinPriceGraph);
+			if (!chartData) await jobCallback();
+
+			// Create and schedule the price chart updation job
 			new CronJob(
-				'1 0 * * *',
-				async () => {
-					const priceGraph =
-						await redisHelper.getString<GraphPayload>(
-							REDIS_KEY.CoinPriceGraph,
-						);
-					const currentCoinPrice =
-						(await redisHelper.getString<number>(
-							REDIS_KEY.COIN_PRICE,
-						)) || CURRENT_DEFAULT_COIN_PRICE;
-
-					const date = new Date();
-					const today = date.toISOString();
-
-					priceGraph.daily.unshift({
-						date: today,
-						value: currentCoinPrice,
-					});
-
-					if (date.getDate() === 1) {
-						priceGraph.monthly.unshift({
-							date: today,
-							value: currentCoinPrice,
-						});
-
-						priceGraph.monthly.pop();
-
-						// only update the monthly price on monday
-					} else if (this.checkDayOfWeek(today, DAYS.MONDAY))
-						priceGraph.monthly[0].value = currentCoinPrice;
-
-					// Save updated history back to Redis
-					const updatedGraph = await redisHelper.setString(
-						REDIS_KEY.CoinPriceGraph,
-						priceGraph,
-					);
-					if (updatedGraph)
-						logger.error(ERROR_MSG.COIN_PRICE_UPDATION);
-
-					logger.info(
-						`Coin price record saved for ${today}: ${currentCoinPrice}`,
-					);
-				},
+				'*/2 * * * *',
+				jobCallback,
 				null,
 				true,
 				'UTC',
@@ -266,7 +349,7 @@ class CronService {
 
 	public checkPendingTransaction() {
 		new CronJob(
-			'*/30 * * * *', // will run every 30 min.
+			'*/30 * * * *', // will run after every 30 min.
 			async () => {
 				await ExlorerHelper.checkTransactionStatus();
 			},
@@ -274,16 +357,6 @@ class CronService {
 			true,
 			'America/Los_Angeles',
 		);
-	}
-
-	public async saveTokenPrice() {
-		async function fetchData() {
-			await ExlorerHelper.saveTokenPriceByDate();
-			setTimeout(fetchData, 60 * 60 * 1000); // Schedule the function to run again in 1 hour (60 minutes * 60 seconds * 1000 milliseconds)
-		}
-
-		// Call the function initially to start the scheduling
-		await fetchData();
 	}
 
 	public async checkValidators() {

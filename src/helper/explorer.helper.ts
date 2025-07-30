@@ -1,5 +1,6 @@
 import axios from 'axios';
 import {
+	CMC_PATHS,
 	CURRENT_DEFAULT_CIRCULATING_SUPPLY,
 	CURRENT_DEFAULT_COIN_PRICE,
 	VERIFICATION_TYPE,
@@ -427,17 +428,18 @@ class ExlorerHelper {
 		}
 	};
 
-	saveTokenPriceByDate = async () => {
+	// OPTIMISE | CLEANUP(CP1): Need to refactor the logic and api calls of below latest coin price updation routine, separate the saving logic to cache storage (redis) and null safty
+	saveLatestCoinPriceFromMarket = async () => {
 		try {
 			const { symbol, currency, coinMarketApi, coinMarketKey } =
 				environment;
 			const params = {
-				symbol,
+				symbol: symbol.toUpperCase(),
 				convert: currency.toLowerCase(),
 			};
 
 			const coinResult = (await fetchRequest(
-				coinMarketApi,
+				`${coinMarketApi}${CMC_PATHS.CRYPTOCURRENCY_QUOTES}${CMC_PATHS.LATEST}`,
 				params,
 				'get',
 				{
@@ -457,7 +459,6 @@ class ExlorerHelper {
 				self_reported_circulating_supply: number;
 				self_reported_market_cap: number;
 			};
-			console.log('coinResult', coinResult);
 
 			// For this example, let (C) = 10,000 USD / 1 BTC and let (S) = 17,000,000 BTC.
 
@@ -481,6 +482,9 @@ class ExlorerHelper {
 				symbol,
 				currency,
 			};
+
+			logger.info('Price updation schedule running, Data below');
+			logger.info(coinMarketResult);
 
 			const coinPrice = coinResult?.price ?? CURRENT_DEFAULT_COIN_PRICE;
 			const circulating_supply = CURRENT_DEFAULT_CIRCULATING_SUPPLY;
@@ -519,10 +523,11 @@ class ExlorerHelper {
 			await RedisService.setString(REDIS_KEY.COIN_PRICE, coinPrice);
 			await SocketHelper.emitSocket(REDIS_KEY.TOKEN_GRAPH);
 
-			return true;
+			return { error: false, data: coinResult };
 		} catch (err) {
-			logger.error('unable to save token price', err);
-			return false;
+			logger.error('Unable to save token price.');
+			console.error(err);
+			return { error: true, data: null };
 		}
 	};
 
