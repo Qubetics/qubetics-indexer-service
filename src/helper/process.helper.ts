@@ -471,15 +471,20 @@ class ProcessHelper {
 	 */
 	private async handleContractExecution(tx: ITransactionPayload) {
 		try {
+			console.log(tx, ' tx.toAddress');
+			console.log('--handleContractExecution--', tx.logs);
+			const getToAddress = await Web3Helper.getCheckSumAddress(
+				tx.toAddress,
+			);
 			const contractType =
 				(await this.getContractTypes(tx?.toAddress)) ||
 				CONTRACT_TYPE.UNKNOWN;
 
 			// Check if contractType is "UNKNOWN"
 			if (contractType.type === CONTRACT_TYPE.UNKNOWN) {
-				const data = await prisma.contracts.update({
+				await prisma.contracts.update({
 					where: {
-						address: tx.toAddress,
+						address: getToAddress,
 					},
 					data: {
 						updatedAt: new Date(tx.timestamp).toISOString(),
@@ -501,15 +506,7 @@ class ProcessHelper {
 			if (tx?.logs?.length) {
 				for (let i = 0; i < tx?.logs?.length; i += 1) {
 					const topics = tx?.logs[i].topics;
-					const fromAddress =
-						Web3SocketHelper.web3Ws.utils.toChecksumAddress(
-							`0x${topics[1].substring(26, topics[1].length)}`,
-						);
-
-					const toAddress =
-						Web3SocketHelper.web3Ws.utils.toChecksumAddress(
-							`0x${topics[2].substring(26, topics[2].length)}`,
-						);
+					console.log('IN topics', topics);
 
 					// let method: string = (await explorerHelper.getEventValue(
 					// 	methodSignature,
@@ -526,7 +523,7 @@ class ProcessHelper {
 					if (contractType.type === 'UNKNOWN') {
 						await prisma.contracts.update({
 							where: {
-								address: tx.toAddress,
+								address: getToAddress,
 							},
 							data: {
 								updatedAt: new Date(tx.timestamp).toISOString(),
@@ -535,16 +532,61 @@ class ProcessHelper {
 					}
 
 					// if (
-					// 	tx.toAddress !== toAddress &&
+					// 	getToAddress !== toAddress &&
 					// 	method === 'transfer' &&
 					// 	contractType.type === CONTRACT_TYPE.ERC20
 					// ) {
 					// 	await explorerHelper.updateTransactionTable(
 					// 		tx.txhash,
-					// 		tx.toAddress,
+					// 		getToAddress,
 					// 		toAddress,
 					// 	);
 					// }
+
+					if (contractType.type !== 'UNKNOWN') {
+						const fromAddress =
+							Web3SocketHelper.web3Ws.utils.toChecksumAddress(
+								`0x${topics[1].substring(
+									26,
+									topics[1].length,
+								)}`,
+							);
+
+						const toAddress =
+							Web3SocketHelper.web3Ws.utils.toChecksumAddress(
+								`0x${topics[2].substring(
+									26,
+									topics[2].length,
+								)}`,
+							);
+
+						if (
+							fromAddress !==
+							'0x0000000000000000000000000000000000000000'
+						) {
+							const tokenbalancefrom =
+								await contractType.contract.methods
+									.balanceOf(fromAddress)
+									.call();
+
+							await explorerHelper.upsertHolder({
+								address: fromAddress,
+								contractAddress: getToAddress,
+								tokenBalance: exp(`${tokenbalancefrom}`),
+							});
+						}
+						if (fromAddress !== toAddress) {
+							const tokenbalanceTo =
+								await contractType.contract.methods
+									.balanceOf(toAddress)
+									.call();
+							await explorerHelper.upsertHolder({
+								address: toAddress,
+								contractAddress: getToAddress,
+								tokenBalance: exp(`${tokenbalanceTo}`),
+							});
+						}
+					}
 
 					const contractLogData: IContractLogs = {
 						logs: JSON.stringify(tx.logs),
@@ -556,66 +598,33 @@ class ProcessHelper {
 						status: tx.status,
 						blockHash: tx.blockhash,
 						timestamp: tx.timestamp,
-						contractAddress: tx.toAddress,
+						contractAddress: getToAddress,
 						blockNumber: Number(tx.blocknumber),
 					};
 
 					const logsRes =
 						await explorerHelper.saveContractLogs(contractLogData);
-
-					if (await explorerHelper.ifContractExist(tx.toAddress)) {
-						await explorerHelper.updateContractExec(tx.toAddress);
-					}
-					let fromRes: any;
-					let toRes: any;
-
-					if (
-						fromAddress !==
-						'0x0000000000000000000000000000000000000000'
-					) {
-						const tokenbalancefrom =
-							await contractType.contract.methods
-								.balanceOf(fromAddress)
-								.call();
-
-						fromRes = await explorerHelper.upsertHolder({
-							address: fromAddress,
-							contractAddress: tx.toAddress,
-							tokenBalance: exp(`${tokenbalancefrom}`),
-						});
-					}
-					if (fromAddress !== toAddress) {
-						const tokenbalanceTo =
-							await contractType.contract.methods
-								.balanceOf(toAddress)
-								.call();
-						toRes = await explorerHelper.upsertHolder({
-							address: toAddress,
-							contractAddress: tx.toAddress,
-							tokenBalance: exp(`${tokenbalanceTo}`),
-						});
+					if (logsRes?.error) {
+						return {
+							error: true,
+							message: RES_MSG.ERROR,
+						};
 					}
 
-					let totalSupply: number;
-					try {
-						totalSupply = Number(
-							await contractType?.contract?.methods
-								?.totalSupply()
-								.call(),
-						);
-					} catch (error) {
-						totalSupply = 0;
+					if (await explorerHelper.ifContractExist(getToAddress)) {
+						await explorerHelper.updateContractExec(getToAddress);
 					}
+
+					const totalSupply = Number(
+						await contractType?.contract?.methods
+							?.totalSupply()
+							.call(),
+					);
 
 					await explorerHelper.updateToken({
 						contractAddress: tx?.toAddress,
-						totalSupply: noExponent(totalSupply),
+						totalSupply: totalSupply ? noExponent(totalSupply) : 0,
 					});
-
-					if (logsRes?.error || fromRes?.error || toRes?.error)
-						throw new Error(
-							'Error while saving contract execution details',
-						);
 				}
 			}
 			return {
@@ -703,7 +712,8 @@ class ProcessHelper {
 	async saveDowntimeAndErrBlock(blockNo: number) {
 		try {
 			const res = await this.processblock(
-				blockNo,
+				// blockNo,
+				613012,
 				QUEUE_NAME.TRANSACTIONS,
 				null,
 				false,

@@ -57,6 +57,7 @@ export const VERIFICATION_TYPE = {
 	FULLY_VERIFIED: 2,
 };
 
+export const CURRENT_DEFAULT_CIRCULATING_SUPPLY = 30542186;
 // MIME types
 export const MIME_TYPES = {
 	JSON: 'application/json',
@@ -75,4 +76,3 @@ export const CMC_PATHS = {
 	LATEST: '/latest',
 	HISTORICAL: '/historical',
 };
-export const CURRENT_DEFAULT_CIRCULATING_SUPPLY = 30542186;

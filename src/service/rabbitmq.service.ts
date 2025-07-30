@@ -505,7 +505,10 @@ class RabbitMq {
 							this.channel.ack(msg);
 						}
 					} catch (error) {
-						console.error('Error in Consumer(STATS_UPDATE):\n', error);
+						console.error(
+							'Error in Consumer(STATS_UPDATE):\n',
+							error,
+						);
 						this.channel.nack(msg);
 					}
 				},

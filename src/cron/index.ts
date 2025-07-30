@@ -2,7 +2,16 @@ import { AnyCnameRecord } from 'dns';
 import axios, { AxiosInstance } from 'axios';
 import * as cron from 'cron';
 import moment, { months } from 'moment';
-import { CURRENT_DEFAULT_COIN_PRICE, DATA_TIME_POINTS, DAYS, MILLI_IN_DAY, MILLI_IN_MIN, MILLI_IN_SEC, MILLI_UNITS, TIME_UNITS } from '../constant/constants';
+import {
+	CURRENT_DEFAULT_COIN_PRICE,
+	DATA_TIME_POINTS,
+	DAYS,
+	MILLI_IN_DAY,
+	MILLI_IN_MIN,
+	MILLI_IN_SEC,
+	MILLI_UNITS,
+	TIME_UNITS,
+} from '../constant/constants';
 import {
 	CONST_NAME,
 	ERROR_MSG,
@@ -12,7 +21,10 @@ import {
 import ExlorerHelper from '../helper/explorer.helper';
 
 import socketHelper from '../helper/socket.helper';
-import { generateZeroFilledChartPoints, getCoinPriceDataFromMarket } from '../helper/stats.helper';
+import {
+	generateZeroFilledChartPoints,
+	getCoinPriceDataFromMarket,
+} from '../helper/stats.helper';
 import { calculateData, getValidatorsInfo } from '../helper/validator.helper';
 import web3Helper from '../helper/web3.helper';
 import { ChartPoint } from '../interface/types';
@@ -201,7 +213,6 @@ class CronService {
 
 	public async coinPriceGraphUpdationSchedule() {
 		try {
-
 			// TODO(REF CP1): Needed need to remove in future
 			// await this.restoreGraphs();
 
@@ -229,58 +240,91 @@ class CronService {
 
 			/**
 			 * CLEANUP(CP2): Need to refactor the below job routine (assignment, breaking into smaller reusable methods and condtionals)
-			 **/
+			 * */
 
 			/**
 			 * Job callback (also can be used without any job schedule)
-			 **/
+			 * */
 			const jobCallback = async () => {
 				try {
+					const { error, data } =
+						await ExlorerHelper.saveLatestCoinPriceFromMarket();
 
-				const {error, data} = await ExlorerHelper.saveLatestCoinPriceFromMarket();
+					logger.info('Price updation schedule running.');
+					const currentTimePoint = new Date();
+					const priceChartData: {
+						daily: ChartPoint[];
+						monthly: ChartPoint[];
+					} = { daily: [], monthly: [] };
 
-				logger.info('Price updation schedule running.');
-				const currentTimePoint = new Date();
-				const priceChartData: { daily: ChartPoint[], monthly: ChartPoint[] } = { daily: [], monthly: [] };
+					// Current day is not included
+					const pastTimePoint = moment().utc().subtract(29, 'day');
+					// Get day wise price data points from third party provider
+					const pastDaysPriceChartPoint =
+						await getCoinPriceDataFromMarket(
+							pastTimePoint.toISOString(),
+							currentTimePoint.toISOString(),
+						);
 
-				// Current day is not included
-				const pastTimePoint = moment().utc().subtract(29, 'day');
-				// Get day wise price data points from third party provider
-				const pastDaysPriceChartPoint = await getCoinPriceDataFromMarket(pastTimePoint.toISOString(), currentTimePoint.toISOString());
+					// Day wise price data points
+					const daysZeroFilledPoints = generateZeroFilledChartPoints(
+						pastTimePoint.toISOString(),
+						30 - pastDaysPriceChartPoint.length,
+					);
+					priceChartData.daily = daysZeroFilledPoints
+						.concat(pastDaysPriceChartPoint)
+						.reverse();
 
+					// Current month is not included
+					const pastMonthTimePoint = moment()
+						.utc()
+						.subtract(11, 'month');
 
-				// Day wise price data points
-				const daysZeroFilledPoints = generateZeroFilledChartPoints(pastTimePoint.toISOString(), 30 - pastDaysPriceChartPoint.length);
-				priceChartData.daily = daysZeroFilledPoints.concat(pastDaysPriceChartPoint).reverse();
+					// Get month wise price data points from third party provider
+					const pastMonthsPriceChartPoint =
+						await getCoinPriceDataFromMarket(
+							pastMonthTimePoint.toISOString(),
+							currentTimePoint.toISOString(),
+							DATA_TIME_POINTS.MONTH,
+						);
 
-				// Current month is not included
-				const pastMonthTimePoint = moment().utc().subtract(11, 'month');
+					const monthlyZeroFilledPoints =
+						generateZeroFilledChartPoints(
+							pastMonthTimePoint.toISOString(),
+							12 - pastMonthsPriceChartPoint.length,
+							'month',
+						);
 
-				// Get month wise price data points from third party provider
-				const pastMonthsPriceChartPoint = await getCoinPriceDataFromMarket(pastMonthTimePoint.toISOString(), currentTimePoint.toISOString(), DATA_TIME_POINTS.MONTH);
+					// Only work if third party provider not giving monthly data points (due to plan or other issues)
+					if (pastMonthsPriceChartPoint.length === 0) {
+						monthlyZeroFilledPoints[
+							monthlyZeroFilledPoints.length - 1
+						].value = error
+							? pastDaysPriceChartPoint[
+									pastDaysPriceChartPoint.length - 1
+								].value
+							: data?.price;
+						priceChartData.monthly =
+							monthlyZeroFilledPoints.reverse();
+					} else
+						priceChartData.monthly = monthlyZeroFilledPoints
+							.concat(pastMonthsPriceChartPoint)
+							.reverse();
 
-				const monthlyZeroFilledPoints = generateZeroFilledChartPoints(pastMonthTimePoint.toISOString(), 12 - pastMonthsPriceChartPoint.length, 'month');
+					// update the latest price for today
+					if (data?.price) priceChartData.daily[0].value = data.price;
 
-				// Only work if third party provider not giving monthly data points (due to plan or other issues)
-				if (pastMonthsPriceChartPoint.length === 0) {
-					monthlyZeroFilledPoints[monthlyZeroFilledPoints.length - 1].value = error ? pastDaysPriceChartPoint[pastDaysPriceChartPoint.length - 1].value : data?.price;
-					priceChartData.monthly = monthlyZeroFilledPoints.reverse();
-				} else
-					priceChartData.monthly = monthlyZeroFilledPoints.concat(pastMonthsPriceChartPoint).reverse()
-
-				// update the latest price for today
-				if (data?.price)
-					priceChartData.daily[0].value = data.price;
-
-				// TODO(KEY1): Need to change all redis keys and queue names and other services related
-				// keys need to capital for better code formatting.
-				await redisHelper.setString(REDIS_KEY.CoinPriceGraph, priceChartData);
-				console.log("Chart points saved: ", priceChartData);
-				logger.info("Cron Schedule price chart updation completed");
+					// TODO(KEY1): Need to change all redis keys and queue names and other services related
+					// keys need to capital for better code formatting.
+					await redisHelper.setString(
+						REDIS_KEY.CoinPriceGraph,
+						priceChartData,
+					);
+					console.log('Chart points saved: ', priceChartData);
+					logger.info('Cron Schedule price chart updation completed');
 				} catch (err) {
-					console.error("Price chart job routine exception:\n", err);
+					console.error('Price chart job routine exception:\n', err);
 				}
-
 
 				// TODO(REF CP1) Need to removed in future if not used (keeping it just in case)
 				// const priceGraph =
@@ -323,20 +367,16 @@ class CronService {
 				// logger.info(
 				// 	`Coin price record saved for ${today}: ${currentCoinPrice}`,
 				// );
-			}
+			};
 
 			// If price chart data not generated, save it initially on service startup
-			const chartData = await redisHelper.getString(REDIS_KEY.CoinPriceGraph);
+			const chartData = await redisHelper.getString(
+				REDIS_KEY.CoinPriceGraph,
+			);
 			if (!chartData) await jobCallback();
 
 			// Create and schedule the price chart updation job
-			new CronJob(
-				'*/2 * * * *',
-				jobCallback,
-				null,
-				true,
-				'UTC',
-			);
+			new CronJob('*/2 * * * *', jobCallback, null, true, 'UTC');
 
 			logger.info('Coin price history scheduler started.');
 		} catch (err) {
