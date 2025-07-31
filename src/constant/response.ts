@@ -36,6 +36,7 @@ export const ERROR_MSG = {
 	DECODE_PARAM_ERROR: 'error occured while decoding param',
 	GET_APR_ERROR: 'error occured while calculating apr value',
 	COIN_PRICE_UPDATION: 'Someting went wrong while updation coin price graph',
+	GET_BALANCE_ERROR: 'Error while fetching balance from blockchain',
 };
 
 export const CONST_NAME = {

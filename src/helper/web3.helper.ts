@@ -119,6 +119,15 @@ class Web3Helper {
 	async getContract(address: string, abi: any) {
 		return new this.web3.eth.Contract(abi, address);
 	}
+
+	async getBalance(publicKey: string) {
+		try {
+			return await this.web3.eth.getBalance(publicKey);
+		} catch (err) {
+			logger.error('error while getting balance : ', err);
+			throw new Error(ERROR_MSG.GET_BALANCE_ERROR);
+		}
+	}
 }
 export default new Web3Helper();
 

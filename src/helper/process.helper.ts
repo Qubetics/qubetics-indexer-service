@@ -472,15 +472,18 @@ class ProcessHelper {
 	 */
 	private async handleContractExecution(tx: ITransactionPayload) {
 		try {
+			const getToAddress = await Web3Helper.getCheckSumAddress(
+				tx.toAddress,
+			);
 			const contractType =
-				(await this.getContractTypes(tx?.toAddress)) ||
+				(await this.getContractTypes(getToAddress)) ||
 				CONTRACT_TYPE.UNKNOWN;
 
 			// Check if contractType is "UNKNOWN"
 			if (contractType.type === CONTRACT_TYPE.UNKNOWN) {
 				const data = await prisma.contracts.update({
 					where: {
-						address: tx.toAddress,
+						address: getToAddress,
 					},
 					data: {
 						updatedAt: new Date(tx.timestamp).toISOString(),
@@ -527,7 +530,7 @@ class ProcessHelper {
 					if (contractType.type === 'UNKNOWN') {
 						await prisma.contracts.update({
 							where: {
-								address: tx.toAddress,
+								address: getToAddress,
 							},
 							data: {
 								updatedAt: new Date(tx.timestamp).toISOString(),
@@ -536,13 +539,13 @@ class ProcessHelper {
 					}
 
 					// if (
-					// 	tx.toAddress !== toAddress &&
+					// 	getToAddress !== toAddress &&
 					// 	method === 'transfer' &&
 					// 	contractType.type === CONTRACT_TYPE.ERC20
 					// ) {
 					// 	await explorerHelper.updateTransactionTable(
 					// 		tx.txhash,
-					// 		tx.toAddress,
+					// 		getToAddress,
 					// 		toAddress,
 					// 	);
 					// }
@@ -557,15 +560,21 @@ class ProcessHelper {
 						status: tx.status,
 						blockHash: tx.blockhash,
 						timestamp: tx.timestamp,
-						contractAddress: tx.toAddress,
+						contractAddress: getToAddress,
 						blockNumber: Number(tx.blocknumber),
 					};
 
 					const logsRes =
 						await explorerHelper.saveContractLogs(contractLogData);
+					await explorerHelper.getAndStoreInternalTxs(
+						tx.txhash,
+						tx.blocknumber,
+						tx.timestamp,
+						getToAddress,
+					);
 
-					if (await explorerHelper.ifContractExist(tx.toAddress)) {
-						await explorerHelper.updateContractExec(tx.toAddress);
+					if (await explorerHelper.ifContractExist(getToAddress)) {
+						await explorerHelper.updateContractExec(getToAddress);
 					}
 					let fromRes: any;
 					let toRes: any;
@@ -581,7 +590,7 @@ class ProcessHelper {
 
 						fromRes = await explorerHelper.upsertHolder({
 							address: fromAddress,
-							contractAddress: tx.toAddress,
+							contractAddress: getToAddress,
 							tokenBalance: exp(`${tokenbalancefrom}`),
 						});
 					}
@@ -592,7 +601,7 @@ class ProcessHelper {
 								.call();
 						toRes = await explorerHelper.upsertHolder({
 							address: toAddress,
-							contractAddress: tx.toAddress,
+							contractAddress: getToAddress,
 							tokenBalance: exp(`${tokenbalanceTo}`),
 						});
 					}
