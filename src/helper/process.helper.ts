@@ -712,8 +712,8 @@ class ProcessHelper {
 	async saveDowntimeAndErrBlock(blockNo: number) {
 		try {
 			const res = await this.processblock(
-				// blockNo,
-				613012,
+				blockNo,
+				// 613012,
 				QUEUE_NAME.TRANSACTIONS,
 				null,
 				false,
