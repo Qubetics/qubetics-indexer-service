@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { ethers } from 'ethers';
 import {
 	CURRENT_DEFAULT_CIRCULATING_SUPPLY,
 	CURRENT_DEFAULT_COIN_PRICE,
@@ -31,7 +32,6 @@ import rabbitmqService from '../service/rabbitmq.service';
 import { fetchRequest } from './common.helper';
 import SocketHelper from './socket.helper';
 import Web3Helper from './web3.helper';
-import { ethers } from 'ethers';
 
 class ExlorerHelper {
 	/**
