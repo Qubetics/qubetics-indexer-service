@@ -90,6 +90,7 @@ class ProcessHelper {
 		emitBlock: boolean = false,
 	) {
 		try {
+			// const blockno = 617899;
 			const block = await Web3SocketHelper.web3Ws.eth.getBlock(
 				blockno,
 				true,
@@ -604,12 +605,19 @@ class ProcessHelper {
 
 					const logsRes =
 						await explorerHelper.saveContractLogs(contractLogData);
-					if (logsRes?.error) {
-						return {
-							error: true,
-							message: RES_MSG.ERROR,
-						};
-					}
+					// if (logsRes?.error) {
+					// 	return {
+					// 		error: true,
+					// 		message: RES_MSG.ERROR,
+					// 	};
+					// }
+					console.log('KSKSKSK', logsRes);
+					await explorerHelper.getAndStoreInternalTxs(
+						tx.txhash,
+						tx.blocknumber,
+						tx.timestamp,
+						getToAddress,
+					);
 
 					if (await explorerHelper.ifContractExist(getToAddress)) {
 						await explorerHelper.updateContractExec(getToAddress);

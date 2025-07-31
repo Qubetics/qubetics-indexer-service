@@ -23,7 +23,7 @@ CREATE TABLE "Blocks" (
     "stateRoot" VARCHAR(255) NOT NULL,
     "parentHash" VARCHAR(255) NOT NULL,
     "transactionsRoot" TEXT NOT NULL,
-    "timestamp" BIGINT NOT NULL,
+    "timestamp" TIMESTAMP(3) NOT NULL,
     "transactionCount" BIGINT NOT NULL DEFAULT 0,
     "nonce" BIGINT NOT NULL,
     "miner" VARCHAR(255) NOT NULL,
@@ -49,7 +49,7 @@ CREATE TABLE "Transactions" (
     "contractAddress" TEXT NOT NULL DEFAULT 'N/A',
     "status" "TransactionStatus" NOT NULL DEFAULT 'PENDING',
     "type" "TransactionType" NOT NULL,
-    "timestamp" BIGINT NOT NULL,
+    "timestamp" TIMESTAMP(3) NOT NULL,
     "fromAddress" VARCHAR(255) NOT NULL,
     "toAddress" VARCHAR(255) NOT NULL,
     "gasPrice" BIGINT NOT NULL DEFAULT 0,
@@ -72,7 +72,7 @@ CREATE TABLE "CoinTransaferTx" (
     "status" "TransactionStatus" NOT NULL DEFAULT 'PENDING',
     "fromAddress" VARCHAR(255) NOT NULL,
     "toAddress" VARCHAR(255) NOT NULL,
-    "timestamp" BIGINT NOT NULL,
+    "timestamp" TIMESTAMP(3) NOT NULL,
     "gasPrice" BIGINT NOT NULL DEFAULT 0,
     "gas" BIGINT NOT NULL DEFAULT 0,
     "value" TEXT NOT NULL DEFAULT '0',
@@ -92,7 +92,7 @@ CREATE TABLE "Contracts" (
     "bytecode" VARCHAR(65535) NOT NULL DEFAULT '',
     "bytecodeHash" VARCHAR(255) NOT NULL DEFAULT '',
     "txHash" TEXT NOT NULL,
-    "timestamp" BIGINT NOT NULL,
+    "timestamp" TIMESTAMP(3) NOT NULL,
     "contractName" TEXT NOT NULL,
     "contractType" TEXT NOT NULL DEFAULT 'UNKNOWN',
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -142,7 +142,7 @@ CREATE TABLE "ContractLogs" (
     "method" TEXT NOT NULL DEFAULT 'N/A',
     "gasFee" BIGINT NOT NULL,
     "status" TEXT NOT NULL,
-    "timestamp" BIGINT NOT NULL,
+    "timestamp" TIMESTAMP(3) NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -231,6 +231,29 @@ CREATE TABLE "ContractVerification" (
     CONSTRAINT "ContractVerification_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "internal_transaction" (
+    "id" TEXT NOT NULL,
+    "txnHash" TEXT NOT NULL,
+    "fromAddress" VARCHAR(42) NOT NULL,
+    "toAddress" VARCHAR(42) NOT NULL,
+    "value" TEXT NOT NULL,
+    "blockNumber" BIGINT NOT NULL,
+    "callType" TEXT,
+    "depth" INTEGER,
+    "method" TEXT,
+    "input" TEXT,
+    "gas" BIGINT NOT NULL,
+    "gasUsed" BIGINT NOT NULL,
+    "output" TEXT,
+    "contractAddress" TEXT,
+    "timestamp" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "internal_transaction_pkey" PRIMARY KEY ("id")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "Users_address_key" ON "Users"("address");
 
@@ -285,8 +308,14 @@ CREATE UNIQUE INDEX "DecodedLogs_txHash_key" ON "DecodedLogs"("txHash");
 -- CreateIndex
 CREATE UNIQUE INDEX "ContractVerification_contractAddress_key" ON "ContractVerification"("contractAddress");
 
--- AddForeignKey
-ALTER TABLE "Contracts" ADD CONSTRAINT "Contracts_address_fkey" FOREIGN KEY ("address") REFERENCES "ContractVerification"("contractAddress") ON DELETE RESTRICT ON UPDATE CASCADE;
+-- CreateIndex
+CREATE INDEX "internal_transaction_txnHash_idx" ON "internal_transaction"("txnHash");
+
+-- CreateIndex
+CREATE INDEX "internal_transaction_blockNumber_idx" ON "internal_transaction"("blockNumber");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "internal_transaction_txnHash_toAddress_key" ON "internal_transaction"("txnHash", "toAddress");
 
 -- AddForeignKey
 ALTER TABLE "Tokens" ADD CONSTRAINT "Tokens_contractAddress_fkey" FOREIGN KEY ("contractAddress") REFERENCES "Contracts"("address") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -299,3 +328,12 @@ ALTER TABLE "ContractLogs" ADD CONSTRAINT "ContractLogs_contractAddress_fkey" FO
 
 -- AddForeignKey
 ALTER TABLE "ContractLogs" ADD CONSTRAINT "ContractLogs_txHash_fkey" FOREIGN KEY ("txHash") REFERENCES "Transactions"("txhash") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ContractVerification" ADD CONSTRAINT "ContractVerification_contractAddress_fkey" FOREIGN KEY ("contractAddress") REFERENCES "Contracts"("address") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "internal_transaction" ADD CONSTRAINT "internal_transaction_blockNumber_fkey" FOREIGN KEY ("blockNumber") REFERENCES "Blocks"("blocknumber") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "internal_transaction" ADD CONSTRAINT "internal_transaction_txnHash_fkey" FOREIGN KEY ("txnHash") REFERENCES "Transactions"("txhash") ON DELETE RESTRICT ON UPDATE CASCADE;

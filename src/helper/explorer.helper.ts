@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { ethers } from 'ethers';
 import {
 	CMC_PATHS,
 	CURRENT_DEFAULT_CIRCULATING_SUPPLY,
@@ -671,7 +672,7 @@ class ExlorerHelper {
 			obj.count = await prisma.users.count();
 			return obj;
 		} catch (error) {
-			logger.error('error occured in getAnalytics: ', error);
+			logger.error('error occureusers.d in getAnalytics: ', error);
 			return {};
 		}
 	}
@@ -816,6 +817,103 @@ class ExlorerHelper {
 			return true;
 		} catch (error) {
 			console.log('Error while update trxn table', error);
+			return false;
+		}
+	};
+
+	async getAndStoreInternalTxs(
+		txHash: string,
+		blockNumber: number,
+		timestamp: Date,
+		contractAddress: string,
+	) {
+		try {
+			const provider = new ethers.JsonRpcProvider(environment.nodeLink);
+			console.log('calls-provider', provider);
+			const tx = await provider.getTransaction(txHash);
+			console.log('calls-tx', tx);
+
+			const receipt = await provider.getTransactionReceipt(txHash);
+			console.log('calls-receipt', receipt);
+
+			// Send raw RPC call
+			const trace = await provider.send('debug_traceTransaction', [
+				txHash,
+				{ tracer: 'callTracer' },
+			]);
+			console.log('calls-trace', trace.calls, trace.calls.length);
+			const callTraces = trace?.calls;
+
+			if (callTraces) {
+				for (const t of callTraces) {
+					if (t.type === 'CALL') {
+						console.log('suppoeerf', t);
+						await prisma.internalTransaction.create({
+							data: {
+								txnHash: txHash,
+								fromAddress: t.from,
+								toAddress: t.to,
+								value: Number(t.value).toString(),
+								input: t?.input || '',
+								callType: t.type,
+								blockNumber,
+								timestamp,
+								gas: Number(t.gas),
+								gasUsed: Number(t.gasUsed),
+								output: t.output,
+								contractAddress,
+							},
+						});
+
+						await this.updateBalance(t.from);
+						await this.updateBalance(t.to);
+						await this.updateBalance(contractAddress);
+					}
+				}
+			}
+
+			return true;
+		} catch (error) {
+			console.log('error', error);
+			return false;
+		}
+	}
+
+	updateBalance = async (wallet_address: string): Promise<any> => {
+		try {
+			if (wallet_address) {
+				const balance = await Web3Helper.getBalance(wallet_address);
+				const updateData: any = {
+					address: wallet_address,
+					balance: balance.toString(),
+					txn: {
+						increment: 1,
+					},
+				};
+				console.log('updateBalance', updateData);
+				const isExist = await prisma.users.findFirst({
+					where: { address: wallet_address },
+				});
+
+				if (isExist) {
+					await prisma.users.update({
+						where: { address: wallet_address },
+						data: updateData,
+					});
+				} else {
+					await prisma.users.create({
+						data: {
+							address: wallet_address,
+							balance: balance.toString(),
+							txn: 1,
+						},
+					});
+				}
+			}
+
+			return true;
+		} catch (err) {
+			console.error('Error creating new user:', err);
 			return false;
 		}
 	};
