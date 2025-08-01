@@ -320,7 +320,7 @@ class CronService {
 						REDIS_KEY.CoinPriceGraph,
 						priceChartData,
 					);
-					console.log('Chart points saved: ', priceChartData);
+					// console.log('Chart points saved: ', priceChartData);
 					logger.info('Cron Schedule price chart updation completed');
 				} catch (err) {
 					console.error('Price chart job routine exception:\n', err);
