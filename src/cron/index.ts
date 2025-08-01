@@ -569,7 +569,7 @@ class CronService {
 		console.log(' syncInternalTransactions Blocks');
 		let processing = false;
 		new CronJob(
-			'*/5 * * * * *', // will run every 1  seconds.
+			'*/2 * * * * *', // will run every 2  seconds.
 			async () => {
 				if (!processing) {
 					processing = true;
