@@ -474,6 +474,7 @@ class ProcessHelper {
 			const getToAddress = await Web3Helper.getCheckSumAddress(
 				tx.toAddress,
 			);
+			console.log('getToAddress', getToAddress);
 			const contractType =
 				(await this.getContractTypes(getToAddress)) ||
 				CONTRACT_TYPE.UNKNOWN;
@@ -981,6 +982,54 @@ class ProcessHelper {
 		} catch (error) {
 			console.log('Error ConsumeBlock', error);
 			return false;
+		}
+	}
+
+	async handleInternalTransactions(blockno: number) {
+		try {
+			const block = await Web3SocketHelper.web3Ws.eth.getBlock(
+				blockno,
+				true,
+			);
+			const transactions = block?.transactions || [];
+
+			if (transactions.length) {
+				for (const element of transactions) {
+					const txReceipt: any =
+						await Web3SocketHelper.web3Ws.eth.getTransactionReceipt(
+							element.hash,
+						);
+
+					if (txReceipt) {
+						const stored =
+							await explorerHelper.getAndStoreInternalTxs(
+								element.hash,
+								blockno,
+								new Date(Number(block?.timestamp) * 1000),
+								txReceipt?.contractAddress ?? element?.to,
+							);
+
+						if (!stored) {
+							console.log(
+								`Failed to store internal tx for ${element.hash}`,
+							);
+							return false;
+						}
+					}
+				}
+				return true;
+			} else {
+				return false;
+			}
+			/* eslint-disable no-await-in-loop */
+			// Disable the rule for the next line
+			// eslint-disable-next-line no-restricted-syntax
+		} catch (error) {
+			console.log(
+				'error while fetching and emiting block and transaction data ',
+				error,
+			);
+			return null;
 		}
 	}
 }

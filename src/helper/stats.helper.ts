@@ -1,6 +1,12 @@
 import axios from 'axios';
 import moment from 'moment';
-import { CMC_PATHS, CUSTOM_HEADERS, MILLI_IN_SEC, MILLI_UNITS, MIME_TYPES } from '../constant/constants';
+import {
+	CMC_PATHS,
+	CUSTOM_HEADERS,
+	MILLI_IN_SEC,
+	MILLI_UNITS,
+	MIME_TYPES,
+} from '../constant/constants';
 import { TimeInterval } from '../interface/types';
 import logger from '../lib/logger';
 
@@ -23,44 +29,57 @@ import logger from '../lib/logger';
  * @param interval Interval of data (default: daily)
  * @returns
  */
-export const getCoinPriceDataFromMarket = async (startTime:string, endTime:string, interval='daily') => {
+export const getCoinPriceDataFromMarket = async (
+	startTime: string,
+	endTime: string,
+	interval = 'daily',
+) => {
 	try {
-	const { symbol, currency, coinMarketApi, coinMarketKey } = environment;
-      // TODO(URL1): Need to create a small lib for parsing http urls for safely use.
-            const params = {
-                symbol,
-                interval,
-                convert: currency,
-                time_start: startTime,
-                time_end: endTime
-            };            
+		const { symbol, currency, coinMarketApi, coinMarketKey } = environment;
+		// TODO(URL1): Need to create a small lib for parsing http urls for safely use.
+		const params = {
+			symbol,
+			interval,
+			convert: currency,
+			time_start: startTime,
+			time_end: endTime,
+		};
 
-			const historicalPriceData = await axios.get(
-				`${coinMarketApi}${CMC_PATHS.CRYPTOCURRENCY_QUOTES}${CMC_PATHS.HISTORICAL}`,
-				{
-					params,
-					headers: {
+		const historicalPriceData = await axios.get(
+			`${coinMarketApi}${CMC_PATHS.CRYPTOCURRENCY_QUOTES}${CMC_PATHS.HISTORICAL}`,
+			{
+				params,
+				headers: {
 					accept: MIME_TYPES.JSON,
 					[CUSTOM_HEADERS.CMC_API_KEY]: coinMarketKey,
-					}
-				});
-                
-                const dataQuotes = historicalPriceData?.data?.data?.quotes;
-                if(!dataQuotes) {
-                    // TODO(LOG1): Need to reimplement the logger for showing objects and other logs more accurately and also show a timestamp
-                    logger.warn('Quotes Missing from response, due to some issue in request');
-                    console.warn('Missing quotes response body: ', historicalPriceData?.data);
-                    return [];
-                }
+				},
+			},
+		);
 
-                const chartPoints = dataQuotes.map((item:any) => ({ date: item.timestamp, value: item.quote.USD.price }));
+		const dataQuotes = historicalPriceData?.data?.data?.quotes;
+		if (!dataQuotes) {
+			// TODO(LOG1): Need to reimplement the logger for showing objects and other logs more accurately and also show a timestamp
+			logger.warn(
+				'Quotes Missing from response, due to some issue in request',
+			);
+			console.warn(
+				'Missing quotes response body: ',
+				historicalPriceData?.data,
+			);
+			return [];
+		}
 
-                return chartPoints;
+		const chartPoints = dataQuotes.map((item: any) => ({
+			date: item.timestamp,
+			value: item.quote.USD.price,
+		}));
 
-	} catch (err:any) {
+		return chartPoints;
+	} catch (err: any) {
 		logger.error('Error while getting coin price form market\n');
-		if(err?.response) logger.error(err.response.data); else logger.error(err);
-        return [];
+		if (err?.response) logger.error(err.response.data);
+		else logger.error(err);
+		return [];
 	}
 };
 
@@ -71,8 +90,21 @@ export const getCoinPriceDataFromMarket = async (startTime:string, endTime:strin
  * @param count Points need to be generated from startTime
  * @param interval Interval of chart points eg: day | month | year
  */
-export const generateZeroFilledChartPoints = (startTime:number | Date | string, count:number = 30, interval:TimeInterval = 'day') => {
-    const _startDateTime =  moment(startTime).utc().startOf('day').startOf(interval);
+export const generateZeroFilledChartPoints = (
+	startTime: number | Date | string,
+	count: number = 30,
+	interval: TimeInterval = 'day',
+) => {
+	const _startDateTime = moment(startTime)
+		.utc()
+		.startOf('day')
+		.startOf(interval);
 
-    return Array.from({ length: count }, (_, i) => ({ date: _startDateTime.add(i === 0 ? 0 : 1, interval).utc().toISOString(), value: 0 }));
+	return Array.from({ length: count }, (_, i) => ({
+		date: _startDateTime
+			.add(i === 0 ? 0 : 1, interval)
+			.utc()
+			.toISOString(),
+		value: 0,
+	}));
 };
