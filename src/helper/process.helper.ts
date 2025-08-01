@@ -1018,9 +1018,9 @@ class ProcessHelper {
 					}
 				}
 				return true;
-			} else {
-				return false;
 			}
+			return false;
+
 			/* eslint-disable no-await-in-loop */
 			// Disable the rule for the next line
 			// eslint-disable-next-line no-restricted-syntax
