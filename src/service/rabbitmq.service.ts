@@ -548,7 +548,7 @@ class RabbitMq {
 				QUEUE_NAME.MISSING_INTERNAL_TRXNS,
 				async (message: amqp.Message | null) => {
 					console.log(
-						'consumeMissingBlocks_message',
+						'consumeInternalTrnxs_message',
 						message?.content.toString(),
 					);
 

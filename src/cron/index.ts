@@ -590,7 +590,7 @@ class CronService {
 			);
 
 			console.log('processInternalTransactions', lastBlock);
-			const latestBlockNo = Number(lastBlock) ?? 623709;
+			const latestBlockNo = Number(lastBlock);
 			const nextBlock = +latestBlockNo + 1;
 
 			const internalTxnQueue = `${QUEUE_NAME.MISSING_INTERNAL_TRXNS}`;
