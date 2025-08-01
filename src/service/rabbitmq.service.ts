@@ -51,6 +51,7 @@ class RabbitMq {
 		this.consumeValidatorDetails();
 		this.consumeStats();
 		this.consumeBlockTimeQue(this.channel);
+		this.consumeInternalTrnxs(this.channel);
 
 		// this.consumeMissingMissingMethods();
 	}
@@ -502,7 +503,10 @@ class RabbitMq {
 							this.channel.ack(msg);
 						}
 					} catch (error) {
-						console.log('consumeStats Error', error);
+						console.error(
+							'Error in Consumer(STATS_UPDATE):\n',
+							error,
+						);
 						this.channel.nack(msg);
 					}
 				},
@@ -534,6 +538,47 @@ class RabbitMq {
 			console.log('consumeStats Error In last', error);
 		}
 	};
+
+	public consumeInternalTrnxs(channel: amqp.Channel): void {
+		try {
+			channel?.consume(
+				QUEUE_NAME.MISSING_INTERNAL_TRXNS,
+				async (message: amqp.Message | null) => {
+					console.log(
+						'consumeInternalTrnxs_message',
+						message?.content.toString(),
+					);
+
+					if (message) {
+						try {
+							const blockNumber = Number(
+								message.content.toString(),
+							);
+							const isSuccess =
+								await processHelper.handleInternalTransactions(
+									blockNumber,
+								);
+							if (!isSuccess && blockNumber) {
+								this.enqueueData(
+									QUEUE_NAME.MISSING_INTERNAL_TRXNS,
+									blockNumber.toString(),
+								);
+							}
+							channel?.ack(message);
+						} catch (error) {
+							console.log('consumeMissingBlocks Error', error);
+							channel?.ack(message);
+						}
+					} else {
+						console.log('consumeMissingBlocks_message ELSE');
+					}
+				},
+				{ noAck: false },
+			);
+		} catch (error) {
+			console.log('consumeMissingBlocks Error Last', error);
+		}
+	}
 }
 
 export default new RabbitMq();

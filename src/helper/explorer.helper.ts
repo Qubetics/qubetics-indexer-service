@@ -830,24 +830,29 @@ class ExlorerHelper {
 		try {
 			const provider = new ethers.JsonRpcProvider(environment.nodeLink);
 			console.log('calls-provider', provider);
-			const tx = await provider.getTransaction(txHash);
-			console.log('calls-tx', tx);
+			// const tx = await provider.getTransaction(txHash);
 
-			const receipt = await provider.getTransactionReceipt(txHash);
-			console.log('calls-receipt', receipt);
+			// const receipt = await provider.getTransactionReceipt(txHash);
 
 			// Send raw RPC call
 			const trace = await provider.send('debug_traceTransaction', [
 				txHash,
 				{ tracer: 'callTracer' },
 			]);
-			console.log('calls-trace', trace.calls, trace.calls.length);
-			const callTraces = trace?.calls;
+			console.log('calls-trace', trace);
+			let callTraces: any = trace;
+
+			if (callTraces?.calls) {
+				callTraces = callTraces?.calls;
+			} else {
+				callTraces = [trace];
+			}
+			console.log('callTraces', callTraces, Array.isArray(callTraces));
 
 			if (callTraces) {
 				for (const t of callTraces) {
 					if (t.type === 'CALL') {
-						console.log('suppoeerf', t);
+						console.log('Checking txn', t);
 						await prisma.internalTransaction.create({
 							data: {
 								txnHash: txHash,
@@ -862,6 +867,7 @@ class ExlorerHelper {
 								gasUsed: Number(t.gasUsed),
 								output: t.output,
 								contractAddress,
+								method: 'Transfer',
 							},
 						});
 

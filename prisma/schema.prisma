@@ -48,7 +48,8 @@ model Blocks {
   gasLimit         BigInt
   gasUsed          BigInt
   createdAt        DateTime @default(now())
-  internalTransactions InternalTransaction[]
+    internalTransactions InternalTransaction[]
+    
 
 
   @@index([blocknumber, blockhash])
@@ -75,7 +76,7 @@ model Transactions {
   input           String?            @default("") 
   createdAt       DateTime          @default(now())
   ContractLogs    ContractLogs[]
-  internalTransactions InternalTransaction[]
+    internalTransactions InternalTransaction[]
 
 
   @@index([type, txhash, contractAddress, fromAddress, toAddress])

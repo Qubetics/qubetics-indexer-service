@@ -36,7 +36,7 @@ export const ERROR_MSG = {
 	DECODE_PARAM_ERROR: 'error occured while decoding param',
 	GET_APR_ERROR: 'error occured while calculating apr value',
 	COIN_PRICE_UPDATION: 'Someting went wrong while updation coin price graph',
-	GET_BALANCE_ERROR: 'error occured while fetching balance detail',
+	GET_BALANCE_ERROR: 'Error while fetching balance from blockchain',
 };
 
 export const CONST_NAME = {
@@ -62,6 +62,7 @@ export const CONST_NAME = {
 	BLOCK_PER_YEAR: 365 * 24 * 60 * 60,
 	ETH_EXP: 10 ** 18,
 	LATEST_OLD_BLOCK: 'latestOldBlock',
+	INTERNAL_TRNXN_BLOCK: 'INTERNAL_TRNXN_BLOCK',
 };
 
 export const QUEUE_NAME = {
@@ -76,6 +77,7 @@ export const QUEUE_NAME = {
 	STATS_UPDATE: 'STATS_UPDATE',
 	OLD_BLOCK: 'OLD_BLOCK',
 	BLOCK_TIME_QUE: 'BLOCK_TIME_QUE',
+	MISSING_INTERNAL_TRXNS: 'MISSING_INTERNAL_TRXNS',
 	// TOKEN: 'TOKEN',
 	// ADD_TX_HASHES: 'ADD_TX_HASHES',
 	// CONTRACT_LOGS: 'CONTRACT_LOGS',

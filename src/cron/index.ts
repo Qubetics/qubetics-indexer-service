@@ -320,7 +320,7 @@ class CronService {
 						REDIS_KEY.CoinPriceGraph,
 						priceChartData,
 					);
-					console.log('Chart points saved: ', priceChartData);
+					// console.log('Chart points saved: ', priceChartData);
 					logger.info('Cron Schedule price chart updation completed');
 				} catch (err) {
 					console.error('Price chart job routine exception:\n', err);
@@ -561,6 +561,52 @@ class CronService {
 			return true;
 		} catch (err) {
 			console.log('Error while saving blocks processBlock In CRON', err);
+			return false;
+		}
+	}
+
+	public syncInternalTransactions() {
+		console.log(' syncInternalTransactions Blocks');
+		let processing = false;
+		new CronJob(
+			'*/2 * * * * *', // will run every 1  seconds.
+			async () => {
+				if (!processing) {
+					processing = true;
+					await this.processInternalTransactions();
+					processing = false;
+				}
+			},
+			null,
+			true,
+			'America/Los_Angeles',
+		);
+	}
+
+	async processInternalTransactions() {
+		try {
+			const lastBlock = await RedisService.getString(
+				CONST_NAME.INTERNAL_TRNXN_BLOCK,
+			);
+
+			console.log('processInternalTransactions', lastBlock);
+			const latestBlockNo = Number(lastBlock);
+			const nextBlock = +latestBlockNo + 1;
+
+			const internalTxnQueue = `${QUEUE_NAME.MISSING_INTERNAL_TRXNS}`;
+			RabbitMqService.enqueueData(
+				internalTxnQueue,
+				latestBlockNo.toString(),
+			);
+
+			await RedisService.setString(
+				CONST_NAME.INTERNAL_TRNXN_BLOCK,
+				nextBlock,
+			);
+
+			return true;
+		} catch (err) {
+			console.log('Error while processInternalTransactions CRON', err);
 			return false;
 		}
 	}
