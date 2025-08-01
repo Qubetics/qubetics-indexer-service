@@ -589,9 +589,16 @@ class CronService {
 				CONST_NAME.INTERNAL_TRNXN_BLOCK,
 			);
 
-			console.log('processInternalTransactions', lastBlock);
-			const latestBlockNo = Number(lastBlock);
+			console.log('processInternal-lastBlock', lastBlock);
+			let latestBlockNo = 611317;
+			if (lastBlock) {
+				console.log('lastBlock-lastBlock', lastBlock);
+				latestBlockNo = Number(lastBlock);
+			}
+			console.log('processInternal-latestBlockNo', latestBlockNo);
+
 			const nextBlock = +latestBlockNo + 1;
+			console.log('processInternal-nextBlock', nextBlock);
 
 			const internalTxnQueue = `${QUEUE_NAME.MISSING_INTERNAL_TRXNS}`;
 			RabbitMqService.enqueueData(

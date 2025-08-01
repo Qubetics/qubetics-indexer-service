@@ -569,17 +569,15 @@ class RabbitMq {
 							}
 							channel?.ack(message);
 						} catch (error) {
-							console.log('consumeMissingBlocks Error', error);
+							console.log('consumeInternalTrnxs Error', error);
 							channel?.ack(message);
 						}
-					} else {
-						console.log('consumeMissingBlocks_message ELSE');
 					}
 				},
 				{ noAck: false },
 			);
 		} catch (error) {
-			console.log('consumeMissingBlocks Error Last', error);
+			console.log('consumeInternalTrnxs Error Last', error);
 		}
 	}
 }
