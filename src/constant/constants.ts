@@ -7,6 +7,9 @@ export const MILLI_IN_DAY = MILLI_IN_HOUR * 24;
 export const REDIS_STATS_UPDATION_CRONTIME = '0 */1 * * * *';
 export const REDIS_STATS_CRON_KEY = 'REDIS_STATS_UPDATE';
 export const CURRENT_DEFAULT_COIN_PRICE = 0.337097;
+export const STATIC_CIRCULATING_SUPPLY_FIGURE = 103186301.5;
+export const DAYS_TO_RUN_CRON_SUPPLY = 84;
+export const DATE_TO_RUN_CRON_SUPPLY = '2025-08-04';
 
 export const DAYS = Object.freeze({
 	SUNDAY: 0,
@@ -76,3 +79,5 @@ export const CMC_PATHS = {
 	LATEST: '/latest',
 	HISTORICAL: '/historical',
 };
+
+export const INCREMENT_SUPPLY_BY = 5188865.391;

@@ -853,11 +853,17 @@ class ExlorerHelper {
 				for (const t of callTraces) {
 					if (t.type === 'CALL') {
 						console.log('Checking txn', t);
+						const toAddress = await Web3Helper.getCheckSumAddress(
+							t.to,
+						);
+						const fromAddress = await Web3Helper.getCheckSumAddress(
+							t.from,
+						);
 						await prisma.internalTransaction.create({
 							data: {
 								txnHash: txHash,
-								fromAddress: t.from,
-								toAddress: t.to,
+								fromAddress,
+								toAddress,
 								value: Number(t.value).toString(),
 								input: t?.input || '',
 								callType: t.type,
@@ -871,8 +877,8 @@ class ExlorerHelper {
 							},
 						});
 
-						await this.updateBalance(t.from);
-						await this.updateBalance(t.to);
+						await this.updateBalance(fromAddress);
+						await this.updateBalance(toAddress);
 						await this.updateBalance(contractAddress);
 					}
 				}

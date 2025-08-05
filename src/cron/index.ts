@@ -5,7 +5,9 @@ import moment, { months } from 'moment';
 import {
 	CURRENT_DEFAULT_COIN_PRICE,
 	DATA_TIME_POINTS,
+	DATE_TO_RUN_CRON_SUPPLY,
 	DAYS,
+	DAYS_TO_RUN_CRON_SUPPLY,
 	MILLI_IN_DAY,
 	MILLI_IN_MIN,
 	MILLI_IN_SEC,
@@ -18,6 +20,7 @@ import {
 	QUEUE_NAME,
 	REDIS_KEY,
 } from '../constant/response';
+import cachingHelper from '../helper/caching.helper';
 import ExlorerHelper from '../helper/explorer.helper';
 
 import socketHelper from '../helper/socket.helper';
@@ -616,6 +619,41 @@ class CronService {
 			console.log('Error while processInternalTransactions CRON', err);
 			return false;
 		}
+	}
+
+	async circulateSupplyCron() {
+		let getSupplyStartDate: any = await redisHelper.getString(
+			REDIS_KEY.START_CIRCULATING_SUPPLY_DATE,
+		);
+
+		if (!getSupplyStartDate) {
+			console.log('DATE_TO_RUN_CRON_SUPPLY');
+			getSupplyStartDate = DATE_TO_RUN_CRON_SUPPLY;
+			await redisHelper.setString(
+				REDIS_KEY.START_CIRCULATING_SUPPLY_DATE,
+				getSupplyStartDate,
+			);
+		}
+		const startDate = new Date(getSupplyStartDate);
+		const today = new Date();
+
+		const diffInMs = today.getTime() - startDate.getTime();
+		const diffInDays = Math.round(diffInMs / (1000 * 60 * 60 * 24));
+
+		if (diffInDays > DAYS_TO_RUN_CRON_SUPPLY) {
+			return false;
+		}
+
+		new CronJob(
+			'00 00 14 * * *', // will run every 07.30pm.
+			async () => {
+				await cachingHelper.circulateSupplyCron();
+			},
+			null,
+			true,
+			'America/Los_Angeles',
+		);
+		return true;
 	}
 }
 
