@@ -60,7 +60,7 @@ app.init()
 		CronService.checkValidators();
 		CronService.updateGraph();
 		CronService.checkPendingTransaction();
-		// CronService.syncInternalTransactions();
+		CronService.syncInternalTransactions();
 		CronService.circulateSupplyCron();
 
 		// TODO(CP1): Need to remove in future not needed now
