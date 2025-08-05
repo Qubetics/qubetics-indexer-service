@@ -588,15 +588,22 @@ class CronService {
 
 	async processInternalTransactions() {
 		try {
-			const lastBlock = await RedisService.getString(
+			const lastBlock: any = await RedisService.getString(
 				CONST_NAME.INTERNAL_TRNXN_BLOCK,
 			);
 
+			const latestBlock: any = await RedisService.getString(
+				CONST_NAME.LATEST_BLOCK,
+			);
+
 			console.log('processInternal-lastBlock', lastBlock);
-			let latestBlockNo = 611317;
+			let latestBlockNo = 697616;
 			if (lastBlock) {
 				console.log('lastBlock-lastBlock', lastBlock);
 				latestBlockNo = Number(lastBlock);
+			}
+			if (latestBlockNo > latestBlock) {
+				return false;
 			}
 			console.log('processInternal-latestBlockNo', latestBlockNo);
 
