@@ -90,6 +90,9 @@ class ProcessHelper {
 		emitBlock: boolean = false,
 	) {
 		try {
+			// const blockno = 668654;
+			// const blockno = 667812;
+
 			const block = await Web3SocketHelper.web3Ws.eth.getBlock(
 				blockno,
 				true,

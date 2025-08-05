@@ -645,7 +645,7 @@ class CronService {
 		}
 
 		new CronJob(
-			'00 00 14 * * *', // will run every 07.30pm.
+			'00 00 14 * * *', // will run every 07.30pm(IST).
 			async () => {
 				await cachingHelper.circulateSupplyCron();
 			},

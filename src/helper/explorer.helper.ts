@@ -103,8 +103,8 @@ class ExlorerHelper {
 				message: RES_MSG.TRANSACTION_ADDED,
 				data: { isAdded: true },
 			};
-		} catch (err) {
-			console.log('error while saving tx detail', err);
+		} catch (err: any) {
+			console.log('error while saving tx detail', err.message);
 			return {
 				error: true,
 				message: RES_MSG.SERVER_ERROR,
@@ -839,7 +839,13 @@ class ExlorerHelper {
 				txHash,
 				{ tracer: 'callTracer' },
 			]);
-			console.log('calls-trace', trace);
+			console.log(
+				'calls-trace',
+				trace,
+				blockNumber,
+				contractAddress,
+				txHash,
+			);
 			let callTraces: any = trace;
 
 			if (callTraces?.calls) {
@@ -847,7 +853,6 @@ class ExlorerHelper {
 			} else {
 				callTraces = [trace];
 			}
-			console.log('callTraces', callTraces, Array.isArray(callTraces));
 
 			if (callTraces) {
 				for (const t of callTraces) {
