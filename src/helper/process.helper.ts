@@ -508,15 +508,15 @@ class ProcessHelper {
 			if (tx?.logs?.length) {
 				for (let i = 0; i < tx?.logs?.length; i += 1) {
 					const topics = tx?.logs[i].topics;
-					const fromAddress =
-						Web3SocketHelper.web3Ws.utils.toChecksumAddress(
-							`0x${topics[1].substring(26, topics[1].length)}`,
-						);
+					// const fromAddress =
+					// 	Web3SocketHelper.web3Ws.utils.toChecksumAddress(
+					// 		`0x${topics[1].substring(26, topics[1].length)}`,
+					// 	);
 
-					const toAddress =
-						Web3SocketHelper.web3Ws.utils.toChecksumAddress(
-							`0x${topics[2].substring(26, topics[2].length)}`,
-						);
+					// const toAddress =
+					// 	Web3SocketHelper.web3Ws.utils.toChecksumAddress(
+					// 		`0x${topics[2].substring(26, topics[2].length)}`,
+					// 	);
 
 					// let method: string = (await explorerHelper.getEventValue(
 					// 	methodSignature,
@@ -582,32 +582,32 @@ class ProcessHelper {
 					let fromRes: any;
 					let toRes: any;
 
-					if (
-						fromAddress !==
-						'0x0000000000000000000000000000000000000000'
-					) {
-						const tokenbalancefrom =
-							await contractType.contract.methods
-								.balanceOf(fromAddress)
-								.call();
+					// if (
+					// 	fromAddress !==
+					// 	'0x0000000000000000000000000000000000000000'
+					// ) {
+					// 	const tokenbalancefrom =
+					// 		await contractType.contract.methods
+					// 			.balanceOf(fromAddress)
+					// 			.call();
 
-						fromRes = await explorerHelper.upsertHolder({
-							address: fromAddress,
-							contractAddress: getToAddress,
-							tokenBalance: exp(`${tokenbalancefrom}`),
-						});
-					}
-					if (fromAddress !== toAddress) {
-						const tokenbalanceTo =
-							await contractType.contract.methods
-								.balanceOf(toAddress)
-								.call();
-						toRes = await explorerHelper.upsertHolder({
-							address: toAddress,
-							contractAddress: getToAddress,
-							tokenBalance: exp(`${tokenbalanceTo}`),
-						});
-					}
+					// 	fromRes = await explorerHelper.upsertHolder({
+					// 		address: fromAddress,
+					// 		contractAddress: getToAddress,
+					// 		tokenBalance: exp(`${tokenbalancefrom}`),
+					// 	});
+					// }
+					// if (fromAddress !== toAddress) {
+					// 	const tokenbalanceTo =
+					// 		await contractType.contract.methods
+					// 			.balanceOf(toAddress)
+					// 			.call();
+					// 	toRes = await explorerHelper.upsertHolder({
+					// 		address: toAddress,
+					// 		contractAddress: getToAddress,
+					// 		tokenBalance: exp(`${tokenbalanceTo}`),
+					// 	});
+					// }
 
 					let totalSupply: number;
 					try {
