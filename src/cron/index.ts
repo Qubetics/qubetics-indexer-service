@@ -598,6 +598,7 @@ class CronService {
 
 			console.log('processInternal-lastBlock', lastBlock);
 			let latestBlockNo = 697616;
+			let revisedBlock = 697616;
 			if (lastBlock) {
 				console.log('lastBlock-lastBlock', lastBlock);
 				latestBlockNo = Number(lastBlock);
@@ -605,7 +606,7 @@ class CronService {
 			if (latestBlockNo > latestBlock) {
 				await RedisService.setString(
 					CONST_NAME.INTERNAL_TRNXN_BLOCK,
-					latestBlock,
+					revisedBlock,
 				);
 				return false;
 			}
