@@ -603,6 +603,10 @@ class CronService {
 				latestBlockNo = Number(lastBlock);
 			}
 			if (latestBlockNo > latestBlock) {
+				await RedisService.setString(
+					CONST_NAME.INTERNAL_TRNXN_BLOCK,
+					latestBlock,
+				);
 				return false;
 			}
 			console.log('processInternal-latestBlockNo', latestBlockNo);
