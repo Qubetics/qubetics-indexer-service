@@ -830,9 +830,9 @@ class ExlorerHelper {
 		try {
 			const provider = new ethers.JsonRpcProvider(environment.nodeLink);
 			console.log('calls-provider', provider);
-			const tx = await provider.getTransaction(txHash);
+			// const tx = await provider.getTransaction(txHash);
 
-			const receipt = await provider.getTransactionReceipt(txHash);
+			// const receipt = await provider.getTransactionReceipt(txHash);
 
 			// Send raw RPC call
 			const trace = await provider.send('debug_traceTransaction', [
@@ -864,27 +864,38 @@ class ExlorerHelper {
 						const fromAddress = await Web3Helper.getCheckSumAddress(
 							t.from,
 						);
-						await prisma.internalTransaction.create({
-							data: {
-								txnHash: txHash,
-								fromAddress,
-								toAddress,
-								value: Number(t.value).toString(),
-								input: t?.input || '',
-								callType: t.type,
-								blockNumber,
-								timestamp,
-								gas: Number(t.gas),
-								gasUsed: Number(t.gasUsed),
-								output: t.output,
-								contractAddress,
-								method: 'Transfer',
-							},
-						});
 
-						await this.updateBalance(fromAddress);
-						await this.updateBalance(toAddress);
-						await this.updateBalance(contractAddress);
+						const validateTrxn =
+							await prisma.internalTransaction.findFirst({
+								where: {
+									txnHash: txHash,
+									toAddress,
+								},
+							});
+
+						if (!validateTrxn) {
+							await prisma.internalTransaction.create({
+								data: {
+									txnHash: txHash,
+									fromAddress,
+									toAddress,
+									value: Number(t.value).toString(),
+									input: t?.input || '',
+									callType: t.type,
+									blockNumber,
+									timestamp,
+									gas: Number(t.gas),
+									gasUsed: Number(t.gasUsed),
+									output: t.output,
+									contractAddress,
+									method: 'Transfer',
+								},
+							});
+
+							await this.updateBalance(fromAddress);
+							await this.updateBalance(toAddress);
+							await this.updateBalance(contractAddress);
+						}
 					}
 				}
 			}

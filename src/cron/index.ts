@@ -597,8 +597,8 @@ class CronService {
 			);
 
 			console.log('processInternal-lastBlock', lastBlock);
-			let latestBlockNo = 697616;
-			// const revisedBlock = 697616;
+			let latestBlockNo = 687616;
+			const revisedBlock = 687616;
 			if (lastBlock) {
 				console.log('lastBlock-lastBlock', lastBlock);
 				latestBlockNo = Number(lastBlock);

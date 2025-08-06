@@ -1022,7 +1022,7 @@ class ProcessHelper {
 				}
 				return true;
 			}
-			return false;
+			return true;
 
 			/* eslint-disable no-await-in-loop */
 			// Disable the rule for the next line
