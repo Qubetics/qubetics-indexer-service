@@ -572,7 +572,7 @@ class CronService {
 		console.log(' syncInternalTransactions Blocks');
 		let processing = false;
 		new CronJob(
-			'*/2 * * * * *', // will run every 2  seconds.
+			'*/10 * * * * *', // will run every 10 seconds.
 			async () => {
 				if (!processing) {
 					processing = true;
@@ -603,11 +603,12 @@ class CronService {
 				console.log('lastBlock-lastBlock', lastBlock);
 				latestBlockNo = Number(lastBlock);
 			}
+
 			if (latestBlockNo > latestBlock) {
-				await RedisService.setString(
-					CONST_NAME.INTERNAL_TRNXN_BLOCK,
-					latestBlock,
-				);
+				// await RedisService.setString(
+				// 	CONST_NAME.INTERNAL_TRNXN_BLOCK,
+				// 	latestBlock,
+				// );
 				return false;
 			}
 			console.log('processInternal-latestBlockNo', latestBlockNo);
@@ -615,11 +616,18 @@ class CronService {
 			const nextBlock = +latestBlockNo + 1;
 			console.log('processInternal-nextBlock', nextBlock);
 
-			const internalTxnQueue = `${QUEUE_NAME.MISSING_INTERNAL_TRXNS}`;
-			RabbitMqService.enqueueData(
-				internalTxnQueue,
-				latestBlockNo.toString(),
-			);
+			const block =
+				await web3Helper.getDetailByBlockNumber(latestBlockNo);
+
+			const transactions = block?.transactions || [];
+
+			if (transactions.length) {
+				const internalTxnQueue = `${QUEUE_NAME.MISSING_INTERNAL_TRXNS}`;
+				RabbitMqService.enqueueData(
+					internalTxnQueue,
+					latestBlockNo.toString(),
+				);
+			}
 
 			await RedisService.setString(
 				CONST_NAME.INTERNAL_TRNXN_BLOCK,
