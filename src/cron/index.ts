@@ -572,7 +572,7 @@ class CronService {
 		console.log(' syncInternalTransactions Blocks');
 		let processing = false;
 		new CronJob(
-			'*/10 * * * * *', // will run every 10 seconds.
+			'*/6 * * * * *', // will run every 6 seconds.
 			async () => {
 				if (!processing) {
 					processing = true;
@@ -597,8 +597,8 @@ class CronService {
 			);
 
 			console.log('processInternal-lastBlock', lastBlock);
-			let latestBlockNo = 687616;
-			const revisedBlock = 687616;
+			let latestBlockNo = 727282;
+			// const revisedBlock = 687616;
 			if (lastBlock) {
 				console.log('lastBlock-lastBlock', lastBlock);
 				latestBlockNo = Number(lastBlock);
