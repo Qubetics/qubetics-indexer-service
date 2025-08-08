@@ -19,6 +19,7 @@ import {
 	ERROR_MSG,
 	QUEUE_NAME,
 	REDIS_KEY,
+	TRANSACTION_TYPE,
 } from '../constant/response';
 import cachingHelper from '../helper/caching.helper';
 import ExlorerHelper from '../helper/explorer.helper';
@@ -32,9 +33,10 @@ import { calculateData, getValidatorsInfo } from '../helper/validator.helper';
 import web3Helper from '../helper/web3.helper';
 import { ChartPoint } from '../interface/types';
 import logger from '../lib/logger';
-import { deepCopy } from '../lib/utilities.helper';
+import { deepCopy, txType } from '../lib/utilities.helper';
 import { RabbitMqService, RedisService } from '../service';
 import redisHelper from '../service/redis.helper';
+import { prisma } from '../lib/db';
 
 const { CronJob } = cron;
 const apiUrl = environment.evmHost;
@@ -615,26 +617,41 @@ class CronService {
 			}
 			console.log('processInternal-latestBlockNo', latestBlockNo);
 
-			const nextBlock = +latestBlockNo + 1;
-			console.log('processInternal-nextBlock', nextBlock);
+			// console.log('processInternal-nextBlock', nextBlock);
+			const checkBlockNumber = await prisma.blocks.findFirst({
+				where: {
+					blocknumber: latestBlockNo,
+				},
+			});
+			if (checkBlockNumber) {
+				const nextBlock = +latestBlockNo + 1;
+				const block =
+					await web3Helper.getDetailByBlockNumber(latestBlockNo);
+				console.log(block, 'block');
+				const transactions: any = block?.transactions || [];
+				console.log('transactions', transactions);
+				if (transactions?.length) {
+					for (const element of transactions) {
+						const tx = await web3Helper.getTxByHash(element);
 
-			const block =
-				await web3Helper.getDetailByBlockNumber(latestBlockNo);
+						const txnType = txType(`${tx.to}`, tx.input);
+						console.log('txnType', txnType);
 
-			const transactions = block?.transactions || [];
-
-			if (transactions.length) {
-				const internalTxnQueue = `${QUEUE_NAME.MISSING_INTERNAL_TRXNS}`;
-				RabbitMqService.enqueueData(
-					internalTxnQueue,
-					latestBlockNo.toString(),
+						if (txnType === TRANSACTION_TYPE.CONTRACT_TRANSFER) {
+							console.log('INIT CONTRACT');
+							const internalTxnQueue = `${QUEUE_NAME.MISSING_INTERNAL_TRXNS}`;
+							RabbitMqService.enqueueData(
+								internalTxnQueue,
+								latestBlockNo.toString(),
+							);
+						}
+					}
+				}
+				await RedisService.setString(
+					CONST_NAME.INTERNAL_TRNXN_BLOCK,
+					nextBlock,
 				);
 			}
-
-			await RedisService.setString(
-				CONST_NAME.INTERNAL_TRNXN_BLOCK,
-				nextBlock,
-			);
 
 			return true;
 		} catch (err) {
