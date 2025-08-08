@@ -846,63 +846,52 @@ class ExlorerHelper {
 				contractAddress,
 				txHash,
 			);
-			let callTraces: any = trace;
 
-			if (callTraces?.calls) {
-				callTraces = callTraces?.calls;
+			const onlyCallTraces: any = await this.flattenCallTraces(
+				trace,
+				txHash,
+				blockNumber,
+				timestamp,
+				contractAddress,
+			);
+
+			console.log('onlyCallTraces', onlyCallTraces);
+
+			if (onlyCallTraces.length > 0) {
+				await prisma.internalTransaction.createMany({
+					data: onlyCallTraces,
+					skipDuplicates: true,
+				});
+
+				console.log(
+					`${onlyCallTraces.length} CALL-type internal transactions saved.`,
+				);
+
+				// for (const t of onlyCallTraces) {
+				// 	if (t.type === 'CALL') {
+				// 		console.log('Checking txn', t);
+				// 		const toAddress = await Web3Helper.getCheckSumAddress(
+				// 			t.to,
+				// 		);
+				// 		const fromAddress = await Web3Helper.getCheckSumAddress(
+				// 			t.from,
+				// 		);
+
+				// 		console.log('TOADDRESS', toAddress);
+				// 		console.log('FROMADDRESS', fromAddress);
+
+				// 		// await this.updateBalance(fromAddress);
+				// 		// await this.updateBalance(toAddress);
+				// 		// await this.updateBalance(contractAddress);
+				// 	}
+				// }
 			} else {
-				callTraces = [trace];
-			}
-
-			if (callTraces) {
-				for (const t of callTraces) {
-					if (t.type === 'CALL') {
-						console.log('Checking txn', t);
-						const toAddress = await Web3Helper.getCheckSumAddress(
-							t.to,
-						);
-						const fromAddress = await Web3Helper.getCheckSumAddress(
-							t.from,
-						);
-
-						const validateTrxn =
-							await prisma.internalTransaction.findFirst({
-								where: {
-									txnHash: txHash,
-									toAddress,
-								},
-							});
-
-						if (!validateTrxn) {
-							await prisma.internalTransaction.create({
-								data: {
-									txnHash: txHash,
-									fromAddress,
-									toAddress,
-									value: Number(t.value).toString(),
-									input: t?.input || '',
-									callType: t.type,
-									blockNumber,
-									timestamp,
-									gas: Number(t.gas),
-									gasUsed: Number(t.gasUsed),
-									output: t.output,
-									contractAddress,
-									method: 'Transfer',
-								},
-							});
-
-							await this.updateBalance(fromAddress);
-							await this.updateBalance(toAddress);
-							await this.updateBalance(contractAddress);
-						}
-					}
-				}
+				console.log('No CALL-type internal transactions found.');
 			}
 
 			return true;
 		} catch (error) {
-			console.log('error', error);
+			console.log('error-getAndStoreInternalTxs', error);
 			return false;
 		}
 	}
@@ -945,6 +934,59 @@ class ExlorerHelper {
 			return false;
 		}
 	};
+
+	async flattenCallTraces(
+		trace: any,
+		txHash: string,
+		blockNumber: number,
+		timestamp: Date,
+		contractAddress: string,
+		result: any[] = [],
+	): Promise<any[]> {
+		if (trace.type === 'CALL') {
+			const toAddress = await Web3Helper.getCheckSumAddress(trace.to);
+			const fromAddress = await Web3Helper.getCheckSumAddress(trace.from);
+
+			const validateTrxn = await prisma.internalTransaction.findFirst({
+				where: {
+					txnHash: txHash,
+					toAddress,
+				},
+			});
+
+			if (!validateTrxn) {
+				result.push({
+					txnHash: txHash,
+					fromAddress,
+					toAddress,
+					value: trace.value ? Number(trace.value).toString() : '0',
+					input: trace.input || '',
+					callType: trace.type,
+					blockNumber,
+					timestamp,
+					gas: trace.gas ? Number(trace.gas) : 0,
+					gasUsed: trace.gasUsed ? Number(trace.gasUsed) : 0,
+					output: trace.output || '',
+					contractAddress,
+					method: 'Transfer',
+				});
+			}
+		}
+
+		if (trace.calls && Array.isArray(trace.calls)) {
+			for (const inner of trace.calls) {
+				await this.flattenCallTraces(
+					inner,
+					txHash,
+					blockNumber,
+					timestamp,
+					contractAddress,
+				);
+			}
+		}
+
+		return result;
+	}
 }
 
 export default new ExlorerHelper();
