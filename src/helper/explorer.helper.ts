@@ -858,9 +858,10 @@ class ExlorerHelper {
 			console.log('onlyCallTraces', onlyCallTraces);
 
 			if (onlyCallTraces.length > 0) {
+				console.log('onlyCallTracesLENFG', onlyCallTraces);
 				await prisma.internalTransaction.createMany({
 					data: onlyCallTraces,
-					skipDuplicates: true,
+					// skipDuplicates: true,
 				});
 
 				console.log(
@@ -953,8 +954,10 @@ class ExlorerHelper {
 					toAddress,
 				},
 			});
+			console.log('Trxn EXISTS', validateTrxn);
 
 			if (!validateTrxn) {
+				console.log('validateTrxn NEW');
 				result.push({
 					txnHash: txHash,
 					fromAddress,
@@ -974,16 +977,20 @@ class ExlorerHelper {
 		}
 
 		if (trace.calls && Array.isArray(trace.calls)) {
+			console.log('tracesHere----', trace);
 			for (const inner of trace.calls) {
+				console.log('trace.calls-----', trace.calls);
 				await this.flattenCallTraces(
 					inner,
 					txHash,
 					blockNumber,
 					timestamp,
 					contractAddress,
+					result,
 				);
 			}
 		}
+		console.log('result.result', result);
 
 		return result;
 	}

@@ -91,7 +91,7 @@ class ProcessHelper {
 	) {
 		try {
 			// const blockno = 727282;
-			// const blockno = 726093;
+			// const blockno = 742514;
 
 			const block = await Web3SocketHelper.web3Ws.eth.getBlock(
 				blockno,
@@ -1019,7 +1019,7 @@ class ProcessHelper {
 
 						if (!stored) {
 							console.log(
-								`Failed to store internal tx for ${element.hash}`,
+								`Failed to store internal tx for ${element.hash}, ${blockno}`,
 							);
 							return false;
 						}

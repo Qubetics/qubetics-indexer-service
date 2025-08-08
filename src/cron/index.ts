@@ -32,11 +32,11 @@ import {
 import { calculateData, getValidatorsInfo } from '../helper/validator.helper';
 import web3Helper from '../helper/web3.helper';
 import { ChartPoint } from '../interface/types';
+import { prisma } from '../lib/db';
 import logger from '../lib/logger';
 import { deepCopy, txType } from '../lib/utilities.helper';
 import { RabbitMqService, RedisService } from '../service';
 import redisHelper from '../service/redis.helper';
-import { prisma } from '../lib/db';
 
 const { CronJob } = cron;
 const apiUrl = environment.evmHost;
