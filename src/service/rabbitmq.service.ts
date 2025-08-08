@@ -563,7 +563,46 @@ class RabbitMq {
 								);
 							if (!isSuccess && blockNumber) {
 								this.enqueueData(
-									QUEUE_NAME.MISSING_INTERNAL_TRXNS,
+									QUEUE_NAME.CATCH_MISSING_INTERNAL_TRXNS,
+									blockNumber.toString(),
+								);
+							}
+							channel?.ack(message);
+						} catch (error) {
+							console.log('consumeInternalTrnxs Error', error);
+							channel?.ack(message);
+						}
+					}
+				},
+				{ noAck: false },
+			);
+		} catch (error) {
+			console.log('consumeInternalTrnxs Error Last', error);
+		}
+	}
+
+	public consumeInternalTrnxsFromCatch(channel: amqp.Channel): void {
+		try {
+			channel?.consume(
+				QUEUE_NAME.CATCH_MISSING_INTERNAL_TRXNS,
+				async (message: amqp.Message | null) => {
+					console.log(
+						'consumeInternalTrnxs_message',
+						message?.content.toString(),
+					);
+
+					if (message) {
+						try {
+							const blockNumber = Number(
+								message.content.toString(),
+							);
+							const isSuccess =
+								await processHelper.handleInternalTransactions(
+									blockNumber,
+								);
+							if (!isSuccess && blockNumber) {
+								this.enqueueData(
+									QUEUE_NAME.CATCH_MISSING_INTERNAL_TRXNS,
 									blockNumber.toString(),
 								);
 							}

@@ -569,6 +569,11 @@ class ProcessHelper {
 
 					const logsRes =
 						await explorerHelper.saveContractLogs(contractLogData);
+
+					RabbitMqService.enqueueData(
+						QUEUE_NAME.MISSING_INTERNAL_TRXNS,
+						tx.blocknumber.toString(),
+					);
 					await explorerHelper.getAndStoreInternalTxs(
 						tx.txhash,
 						tx.blocknumber,
@@ -1032,7 +1037,7 @@ class ProcessHelper {
 				'error while fetching and emiting block and transaction data ',
 				error,
 			);
-			return null;
+			return false;
 		}
 	}
 }
