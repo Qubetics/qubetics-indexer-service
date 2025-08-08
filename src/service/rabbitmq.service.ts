@@ -56,6 +56,7 @@ class RabbitMq {
 		this.consumeStats();
 		this.consumeBlockTimeQue(this.channel);
 		this.consumeInternalTrnxs(this.channel);
+		this.consumeInternalTrnxsFromCatch(this.channel);
 
 		// this.consumeMissingMissingMethods();
 	}
