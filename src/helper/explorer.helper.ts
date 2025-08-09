@@ -955,10 +955,8 @@ class ExlorerHelper {
 					toAddress,
 				},
 			});
-			console.log('Trxn EXISTS', validateTrxn);
 
 			if (!validateTrxn) {
-				console.log('validateTrxn NEW');
 				result.push({
 					txnHash: txHash,
 					fromAddress,
@@ -978,9 +976,7 @@ class ExlorerHelper {
 		}
 
 		if (trace.calls && Array.isArray(trace.calls)) {
-			console.log('tracesHere----', trace);
 			for (const inner of trace.calls) {
-				console.log('trace.calls-----', trace.calls);
 				await this.flattenCallTraces(
 					inner,
 					txHash,
@@ -991,7 +987,6 @@ class ExlorerHelper {
 				);
 			}
 		}
-		console.log('result.result', result);
 
 		return result;
 	}
