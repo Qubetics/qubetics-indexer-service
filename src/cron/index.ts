@@ -55,7 +55,7 @@ class CronService {
 				Accept: 'application/json',
 			},
 			// timeout: CONST_NAME.THOUSAND,
-			timeout: 5000,
+			timeout: 10 * CONST_NAME.THOUSAND,
 		});
 	}
 
