@@ -33,6 +33,7 @@ import rabbitmqService from '../service/rabbitmq.service';
 import { fetchRequest } from './common.helper';
 import SocketHelper from './socket.helper';
 import Web3Helper from './web3.helper';
+import { convertBigIntToNumber } from '../lib/utilities.helper';
 
 class ExlorerHelper {
 	/**
@@ -994,6 +995,54 @@ class ExlorerHelper {
 
 		return result;
 	}
+
+	getMissingLogs = async () => {
+		try {
+			const missingLogs: any =
+				await prisma.$queryRaw`SELECT t.* FROM "Transactions" t LEFT JOIN ContractLogs l ON t."txhash" = l."txHash" WHERE t.input != '0x' AND l."txHash" IS NULL ORDER BY t.createdAt ASC LIMIT 5`;
+			return missingLogs.map((result: any) =>
+				convertBigIntToNumber(result),
+			);
+		} catch (error) {
+			console.log(error, 'getMissingLogs');
+			return null;
+		}
+	};
+
+	// updateLogs = async (decodedInput: any) => {
+	// 	try {
+	// 		console.log('decodedInput', decodedInput);
+	// 		const txRes = await prisma.contractLogs.findUnique({
+	// 			where: {
+	// 				blockNumber_: {
+	// 					block_number: decodedInput.block_number,
+	// 					log_index: decodedInput.log_index,
+	// 				},
+	// 			},
+	// 		});
+	// 		if (txRes) {
+	// 			await prisma.logs.update({
+	// 				data: {
+	// 					decoded_logs: decodedInput.decoded_logs,
+	// 				},
+	// 				where: {
+	// 					block_number_log_index: {
+	// 						block_number: decodedInput.block_number,
+	// 						log_index: decodedInput.log_index,
+	// 					},
+	// 				},
+	// 			});
+	// 			return true;
+	// 		}
+	// 		return false;
+	// 	} catch (err) {
+	// 		console.log(
+	// 			`error while saving saveLogs detail`,
+	// 			(err as Error).message,
+	// 		);
+	// 		return false;
+	// 	}
+	// };
 }
 
 export default new ExlorerHelper();

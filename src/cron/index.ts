@@ -609,15 +609,10 @@ class CronService {
 			}
 
 			if (latestBlockNo > latestBlock) {
-				// await RedisService.setString(
-				// 	CONST_NAME.INTERNAL_TRNXN_BLOCK,
-				// 	latestBlock,
-				// );
 				return false;
 			}
 			console.log('processInternal-latestBlockNo', latestBlockNo);
 
-			// console.log('processInternal-nextBlock', nextBlock);
 			const checkBlockNumber = await prisma.blocks.findFirst({
 				where: {
 					blocknumber: latestBlockNo,

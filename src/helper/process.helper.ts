@@ -91,7 +91,7 @@ class ProcessHelper {
 	) {
 		try {
 			// const blockno = 727282;
-			// const blockno = 742514;
+			// const blockno = 726093;
 
 			const block = await Web3SocketHelper.web3Ws.eth.getBlock(
 				blockno,
@@ -506,6 +506,8 @@ class ProcessHelper {
 			}
 
 			if (tx?.logs?.length) {
+				console.log('THE LOGGS ', tx?.logs);
+				console.log('contractType.type', contractType.type);
 				for (let i = 0; i < tx?.logs?.length; i += 1) {
 					const topics = tx?.logs[i].topics;
 					// const fromAddress =
@@ -570,20 +572,20 @@ class ProcessHelper {
 					const logsRes =
 						await explorerHelper.saveContractLogs(contractLogData);
 
-					RabbitMqService.enqueueData(
-						QUEUE_NAME.MISSING_INTERNAL_TRXNS,
-						tx.blocknumber.toString(),
-					);
-					await explorerHelper.getAndStoreInternalTxs(
-						tx.txhash,
-						tx.blocknumber,
-						tx.timestamp,
-						getToAddress,
-					);
+					// await explorerHelper.getAndStoreInternalTxs(
+					// 	tx.txhash,
+					// 	tx.blocknumber,
+					// 	tx.timestamp,
+					// 	getToAddress,
+					// );
 
 					if (await explorerHelper.ifContractExist(getToAddress)) {
 						await explorerHelper.updateContractExec(getToAddress);
 					}
+					RabbitMqService.enqueueData(
+						QUEUE_NAME.MISSING_INTERNAL_TRXNS,
+						tx.blocknumber.toString(),
+					);
 					let fromRes: any;
 					let toRes: any;
 
