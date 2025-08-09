@@ -28,12 +28,12 @@ import {
 } from '../interface/index';
 import { prisma } from '../lib/db';
 import logger from '../lib/logger';
+import { convertBigIntToNumber } from '../lib/utilities.helper';
 import { RedisService } from '../service/index';
 import rabbitmqService from '../service/rabbitmq.service';
 import { fetchRequest } from './common.helper';
 import SocketHelper from './socket.helper';
 import Web3Helper from './web3.helper';
-import { convertBigIntToNumber } from '../lib/utilities.helper';
 
 class ExlorerHelper {
 	/**
@@ -840,13 +840,13 @@ class ExlorerHelper {
 				txHash,
 				{ tracer: 'callTracer' },
 			]);
-			console.log(
-				'calls-trace',
-				trace,
-				blockNumber,
-				contractAddress,
-				txHash,
-			);
+			// console.log(
+			// 	'calls-trace',
+			// 	trace,
+			// 	blockNumber,
+			// 	contractAddress,
+			// 	txHash,
+			// );
 
 			const onlyCallTraces: any = await this.flattenCallTraces(
 				trace,
@@ -856,10 +856,10 @@ class ExlorerHelper {
 				contractAddress,
 			);
 
-			console.log('onlyCallTraces', onlyCallTraces);
+			// console.log('onlyCallTraces', onlyCallTraces);
 
 			if (onlyCallTraces.length > 0) {
-				console.log('onlyCallTracesLENFG', onlyCallTraces);
+				// console.log('onlyCallTracesLENFG', onlyCallTraces);
 				await prisma.internalTransaction.createMany({
 					data: onlyCallTraces,
 					// skipDuplicates: true,
