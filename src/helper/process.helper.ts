@@ -506,7 +506,6 @@ class ProcessHelper {
 			}
 
 			if (tx?.logs?.length) {
-				console.log('THE LOGGS ', tx?.logs);
 				console.log('contractType.type', contractType.type);
 				for (let i = 0; i < tx?.logs?.length; i += 1) {
 					const topics = tx?.logs[i].topics;
