@@ -618,8 +618,10 @@ class CronService {
 					blocknumber: latestBlockNo,
 				},
 			});
+			console.log(checkBlockNumber, 'checkBlockNumber');
+			const nextBlock = +latestBlockNo + 1;
+
 			if (checkBlockNumber) {
-				const nextBlock = +latestBlockNo + 1;
 				const block =
 					await web3Helper.getDetailByBlockNumber(latestBlockNo);
 				console.log(block, 'block');
@@ -642,11 +644,11 @@ class CronService {
 						}
 					}
 				}
-				await RedisService.setString(
-					CONST_NAME.INTERNAL_TRNXN_BLOCK,
-					nextBlock,
-				);
 			}
+			await RedisService.setString(
+				CONST_NAME.INTERNAL_TRNXN_BLOCK,
+				nextBlock,
+			);
 
 			return true;
 		} catch (err) {
