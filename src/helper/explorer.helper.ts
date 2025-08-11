@@ -892,8 +892,12 @@ class ExlorerHelper {
 			}
 
 			return true;
-		} catch (error) {
+		} catch (error: any) {
 			console.log('error-getAndStoreInternalTxs', error);
+			if (error.code === 'P2002') {
+				console.log('----ooo---');
+				return true;
+			}
 			return false;
 		}
 	}
@@ -955,6 +959,7 @@ class ExlorerHelper {
 					toAddress,
 				},
 			});
+			console.log('validateTrxn', validateTrxn);
 
 			if (!validateTrxn) {
 				result.push({
