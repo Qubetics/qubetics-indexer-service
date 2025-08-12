@@ -183,6 +183,7 @@ class RabbitMq {
 	 */
 	public enqueueData(queue: string, data: string) {
 		try {
+			console.log('queueName', queue);
 			return this.channel?.sendToQueue(queue, Buffer.from(data));
 		} catch (error) {
 			logger.error(
@@ -588,7 +589,7 @@ class RabbitMq {
 		}
 	}
 
-	consumeStats(): void {
+	consumeStats0(): void {
 		this.channel?.consume(
 			QUEUE_NAME.STATS_UPDATE,
 			async (msg: amqp.Message | null) => {
@@ -613,7 +614,7 @@ class RabbitMq {
 		);
 	}
 
-	consumeStats0 = () => {
+	consumeStats = () => {
 		try {
 			this.channel.consume(
 				QUEUE_NAME.STATS_UPDATE,
