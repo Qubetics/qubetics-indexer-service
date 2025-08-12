@@ -488,39 +488,6 @@ class RabbitMq {
 		}
 	}
 
-	consumeStats = () => {
-		try {
-			this.channel.consume(
-				QUEUE_NAME.STATS_UPDATE,
-				(msg: amqp.Message | null) => {
-					if (!msg) return;
-					try {
-						const message: StatsType = JSON.parse(
-							msg.content.toString('utf-8'),
-						);
-						console.log('Queued Stats Update Message: ', message);
-
-						// update the stats
-						if (statsUpdater.updateInMemoryStats(message)) {
-							// update the latest count for data tables
-							countHelper.updateLatestCount(message);
-							this.channel.ack(msg);
-						}
-					} catch (error) {
-						console.error(
-							'Error in Consumer(STATS_UPDATE):\n',
-							error,
-						);
-						this.channel.nack(msg);
-					}
-				},
-				{ noAck: false },
-			);
-		} catch (error) {
-			console.log('consumeStats Error In last', error);
-		}
-	};
-
 	consumeBlockTimeQue = (channel: amqp.Channel): void => {
 		try {
 			channel.consume(
@@ -620,6 +587,68 @@ class RabbitMq {
 			console.log('consumeInternalTrnxs Error Last', error);
 		}
 	}
+
+	consumeStats(): void {
+		this.channel?.consume(
+			QUEUE_NAME.STATS_UPDATE,
+			async (msg: amqp.Message | null) => {
+				console.log('consumeStats_message', msg?.content.toString());
+
+				if (msg) {
+					try {
+						const message = JSON.parse(msg.content.toString());
+						if (statsUpdater.updateInMemoryStats(message)) {
+							// update the latest count for data tables
+							countHelper.updateLatestCount(message);
+							this.channel.ack(msg);
+						}
+						this.channel?.ack(msg);
+					} catch (error) {
+						console.log('consumeStats Error', error);
+						this.channel?.ack(msg);
+					}
+				}
+			},
+			{ noAck: false },
+		);
+	}
+
+	consumeStats0 = () => {
+		try {
+			this.channel.consume(
+				QUEUE_NAME.STATS_UPDATE,
+				(msg: amqp.Message | null) => {
+					console.log('consumeStatsMessage', msg);
+					if (!msg) return;
+					try {
+						// const message: StatsType = JSON.parse(
+						// 	msg.content.toString('utf-8'),
+						// );
+						const message: StatsType = JSON.parse(
+							msg.content.toString('utf-8'),
+						);
+						console.log('Queued Stats Update Message: ', message);
+
+						// update the stats
+						if (statsUpdater.updateInMemoryStats(message)) {
+							// update the latest count for data tables
+							countHelper.updateLatestCount(message);
+							this.channel.ack(msg);
+						}
+					} catch (error) {
+						console.error(
+							'Error in Consumer(STATS_UPDATE):\n',
+							error,
+						);
+						this.channel.nack(msg);
+					}
+				},
+				{ noAck: false },
+			);
+		} catch (error) {
+			console.log('consumeStats Error In last', error);
+		}
+	};
 }
 
 export default new RabbitMq();
