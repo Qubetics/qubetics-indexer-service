@@ -195,9 +195,11 @@ async function getValidatorsInfo(
 		);
 		const validators: ValidatorInfo[] = [];
 		const validatorAddresses: string[] = [];
+		let selfStakeValue = 0;
 		// console.log(response?.data?.validators);
 		for (let i = 0; i < response?.data?.validators?.length; i += 1) {
 			const validator = response.data.validators[i];
+			console.log('validator-validator', validator);
 
 			const validatorOperaterAddress = validator.operator_address;
 
@@ -206,6 +208,12 @@ async function getValidatorsInfo(
 			const address = bech32.encode(
 				environment.delegatorPrefix,
 				decodeAddress.words,
+			);
+
+			console.log(
+				'validatorOperaterAddress1',
+				validatorOperaterAddress,
+				address,
 			);
 
 			// console.log('address', address);
@@ -230,10 +238,30 @@ async function getValidatorsInfo(
 						e.delegation.validator_address ===
 							validatorOperaterAddress,
 				);
+			if (valIndex < 0) {
+				console.log('Not found In the Previous API');
+				const getDelegationDetail: any = await getDelegationDetails(
+					apiRes,
+					address,
+				);
+				console.log(
+					'stakeDetails',
+					getDelegationDetail.delegation_responses[0].balance.amount,
+				);
+				selfStakeValue =
+					getDelegationDetail.delegation_responses[0].balance.amount;
+			}
+			console.log(valIndex, 'valIndex');
+			let deleShares = 0;
 
-			const deleShares =
-				stakeDetails?.delegation_responses[valIndex]?.delegation
-					.shares || 0;
+			if (stakeDetails?.delegation_responses[valIndex]?.balance?.amount) {
+				deleShares =
+					stakeDetails.delegation_responses[valIndex].balance.amount;
+			} else if (selfStakeValue) {
+				deleShares = selfStakeValue;
+			} else {
+				deleShares = 0;
+			}
 			console.log('deleShares', deleShares);
 			const selfStake = deleShares || 0;
 			const delegatorCount = parseInt(stakeDetails.pagination.total, 10);
@@ -446,6 +474,16 @@ function calculateRealAPR(
 	const blockProvision = params.annualProvisions / params.blocksPerYear;
 	const realProvision = blockProvision * blocksYearReal;
 	return nominalAPR * (realProvision / params.annualProvisions);
+}
+
+async function getDelegationDetails(
+	apiRes: AxiosInstance,
+	address: string,
+): Promise<ValidatorDelegations> {
+	const response: AxiosResponse = await apiRes.get(
+		`/cosmos/staking/v1beta1/delegations/${address}`,
+	);
+	return response.data;
 }
 
 export { calculateData, getValidatorsInfo };
