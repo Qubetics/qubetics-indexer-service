@@ -198,17 +198,19 @@ async function getValidatorsInfo(
 		// console.log(response?.data?.validators);
 		for (let i = 0; i < response?.data?.validators?.length; i += 1) {
 			const validator = response.data.validators[i];
+
 			const validatorOperaterAddress = validator.operator_address;
 
 			const decodeAddress = bech32.decode(validatorOperaterAddress);
 
 			const address = bech32.encode(
-				decodeAddress.prefix,
+				environment.delegatorPrefix,
 				decodeAddress.words,
 			);
 
 			// console.log('address', address);
-			const data = bech32.fromWords(decodeAddress.words); // Convert 5-bit words to binary
+			// const data = bech32.fromWords(decodeAddress.words); // Convert 5-bit words to binary
+			// console.log(data, 'data');
 			// console.log(
 			// 	'decodeVALIDE',
 			// 	`0x${Buffer.from(data).toString('hex')}`,
@@ -220,6 +222,7 @@ async function getValidatorsInfo(
 				validator.operator_address,
 			);
 
+			// console.log('STAKE_DETAILS', stakeDetails.delegation_responses);
 			const valIndex: number =
 				stakeDetails?.delegation_responses.findIndex(
 					(e: any) =>
@@ -227,14 +230,14 @@ async function getValidatorsInfo(
 						e.delegation.validator_address ===
 							validatorOperaterAddress,
 				);
-			// console.log('valIndex', valIndex);
 
 			const deleShares =
 				stakeDetails?.delegation_responses[valIndex]?.delegation
 					.shares || 0;
+			console.log('deleShares', deleShares);
 			const selfStake = deleShares || 0;
 			const delegatorCount = parseInt(stakeDetails.pagination.total, 10);
-			// console.log('deleShares', deleShares, delegatorCount);
+			console.log('deleShares', deleShares, delegatorCount);
 
 			let status = RES_MSG.DEACTIVATING;
 

@@ -493,7 +493,7 @@ class RabbitMq {
 			this.channel.consume(
 				QUEUE_NAME.STATS_UPDATE,
 				(msg: amqp.Message | null) => {
-					console.log('consumeStatsMessage', msg);
+					// console.log('consumeStatsMessage', msg);
 					if (!msg) return;
 					try {
 						const message: StatsType = JSON.parse(

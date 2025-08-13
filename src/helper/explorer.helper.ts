@@ -959,7 +959,6 @@ class ExlorerHelper {
 					toAddress,
 				},
 			});
-			console.log('validateTrxn', validateTrxn);
 
 			if (!validateTrxn) {
 				result.push({
