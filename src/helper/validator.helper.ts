@@ -251,7 +251,7 @@ async function getValidatorsInfo(
 				selfStakeValue =
 					getDelegationDetail.delegation_responses[0].balance.amount;
 			}
-			console.log(valIndex, 'valIndex');
+
 			let deleShares = 0;
 
 			if (stakeDetails?.delegation_responses[valIndex]?.balance?.amount) {
