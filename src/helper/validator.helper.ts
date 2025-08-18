@@ -259,8 +259,6 @@ async function getValidatorsInfo(
 					stakeDetails.delegation_responses[valIndex].balance.amount;
 			} else if (selfStakeValue) {
 				deleShares = selfStakeValue;
-			} else {
-				deleShares = 0;
 			}
 			console.log('deleShares', deleShares);
 			const selfStake = deleShares || 0;
