@@ -507,7 +507,7 @@ class RabbitMq {
 							countHelper.updateLatestCount(message);
 							this.channel.ack(msg);
 						}
-						this.channel.ack(msg);
+						// this.channel.ack(msg);
 					} catch (error) {
 						console.error(
 							'Error in Consumer(STATS_UPDATE):\n',
