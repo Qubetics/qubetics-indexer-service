@@ -590,7 +590,7 @@ class RabbitMq {
 				QUEUE_NAME.CATCH_MISSING_INTERNAL_TRXNS,
 				async (message: amqp.Message | null) => {
 					console.log(
-						'consumeInternalTrnxs_message',
+						'consumeInternalTrnxsFromCatch',
 						message?.content.toString(),
 					);
 

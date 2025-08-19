@@ -90,7 +90,7 @@ class ProcessHelper {
 		emitBlock: boolean = false,
 	) {
 		try {
-			// const blockno = 791380;
+			// const blockno = 818206;
 
 			const block = await Web3SocketHelper.web3Ws.eth.getBlock(
 				blockno,
@@ -1009,22 +1009,37 @@ class ProcessHelper {
 						);
 
 					if (txReceipt) {
-						const stored =
-							await explorerHelper.getAndStoreInternalTxs(
-								element.hash,
-								blockno,
-								new Date(Number(block?.timestamp) * 1000),
-								txReceipt?.contractAddress ?? element?.to,
-							);
+						// check if this is a contract execution
+						let isContractExecution = false;
 
-						if (!stored) {
-							console.log(
-								`Failed to store internal tx for ${element.hash}, ${blockno}`,
-							);
-							RabbitMqService.enqueueData(
-								QUEUE_NAME.CATCH_MISSING_INTERNAL_TRXNS,
-								blockno.toString(),
-							);
+						if (txReceipt.to) {
+							const code =
+								await Web3SocketHelper.web3Ws.eth.getCode(
+									txReceipt.to,
+								);
+							if (code && code !== '0x') {
+								isContractExecution = true;
+							}
+						}
+
+						if (isContractExecution) {
+							const stored =
+								await explorerHelper.getAndStoreInternalTxs(
+									element.hash,
+									blockno,
+									new Date(Number(block?.timestamp) * 1000),
+									txReceipt?.contractAddress ?? element?.to,
+								);
+
+							if (!stored) {
+								console.log(
+									`Failed to store internal tx for ${element.hash}, ${blockno}`,
+								);
+								RabbitMqService.enqueueData(
+									QUEUE_NAME.CATCH_MISSING_INTERNAL_TRXNS,
+									blockno.toString(),
+								);
+							}
 						}
 					}
 				}
