@@ -594,6 +594,9 @@ class CronService {
 				CONST_NAME.INTERNAL_TRNXN_BLOCK,
 			);
 
+			const recentBlock: any = await RedisService.getString(
+				CONST_NAME.RECENT_INTERNAL_TXN_BLOCK,
+			);
 			const latestBlock: any = await RedisService.getString(
 				CONST_NAME.LATEST_BLOCK,
 			);
@@ -609,6 +612,10 @@ class CronService {
 			}
 
 			if (latestBlockNo > latestBlock) {
+				return false;
+			}
+
+			if (latestBlockNo >= recentBlock) {
 				return false;
 			}
 			console.log('processInternal-latestBlockNo', latestBlockNo);
@@ -691,6 +698,87 @@ class CronService {
 		);
 
 		return true;
+	}
+
+	public syncRecentInternalTransactions() {
+		console.log(' syncInternalTransactions Blocks');
+		let processing = false;
+		new CronJob(
+			'*/3 * * * * *', // will run every 6 seconds.
+			async () => {
+				if (!processing) {
+					processing = true;
+					await this.processRecentInternalTransactions();
+					processing = false;
+				}
+			},
+			null,
+			true,
+			'America/Los_Angeles',
+		);
+	}
+
+	async processRecentInternalTransactions() {
+		try {
+			const lastBlock: any = await RedisService.getString(
+				CONST_NAME.RECENT_INTERNAL_TXN_BLOCK,
+			);
+
+			const latestBlock: any = await RedisService.getString(
+				CONST_NAME.LATEST_BLOCK,
+			);
+
+			console.log('RECENT BLOCK', lastBlock);
+
+			if (!lastBlock) {
+				return false;
+			}
+			if (lastBlock > latestBlock) {
+				return false;
+			}
+
+			const checkBlockNumber = await prisma.blocks.findFirst({
+				where: {
+					blocknumber: lastBlock,
+				},
+			});
+
+			const nextBlock = +lastBlock + 1;
+
+			if (checkBlockNumber) {
+				const block =
+					await web3Helper.getDetailByBlockNumber(lastBlock);
+
+				const transactions: any = block?.transactions || [];
+				console.log('transactions', transactions);
+				if (transactions?.length) {
+					for (const element of transactions) {
+						const tx = await web3Helper.getTxByHash(element);
+
+						const txnType = txType(`${tx.to}`, tx.input);
+						console.log('txnType', txnType);
+
+						if (txnType === TRANSACTION_TYPE.CONTRACT_TRANSFER) {
+							console.log('INIT CONTRACT');
+							const internalTxnQueue = `${QUEUE_NAME.RECENT_INTERNAL_TRXNS}`;
+							RabbitMqService.enqueueData(
+								internalTxnQueue,
+								lastBlock.toString(),
+							);
+						}
+					}
+				}
+			}
+			await RedisService.setString(
+				CONST_NAME.RECENT_INTERNAL_TXN_BLOCK,
+				nextBlock,
+			);
+
+			return true;
+		} catch (err) {
+			console.log('Error while processInternalTransactions CRON', err);
+			return false;
+		}
 	}
 }
 

@@ -55,8 +55,22 @@ class RabbitMq {
 		this.consumeValidatorDetails();
 		this.consumeStats();
 		this.consumeBlockTimeQue(this.channel);
-		this.consumeInternalTrnxs(this.channel);
-		this.consumeInternalTrnxsFromCatch(this.channel);
+		// this.consumeInternalTrnxs(this.channel);
+		// this.consumeInternalTrnxsFromCatch(this.channel);
+		// this.consumeRecentInternalTrnxsFromCatch(this.channel);
+
+		this.consumeInternalTrxnsQueue(
+			this.channel,
+			QUEUE_NAME.MISSING_INTERNAL_TRXNS,
+		); // original
+		this.consumeInternalTrxnsQueue(
+			this.channel,
+			QUEUE_NAME.CATCH_MISSING_INTERNAL_TRXNS,
+		); // catch
+		this.consumeInternalTrxnsQueue(
+			this.channel,
+			QUEUE_NAME.RECENT_INTERNAL_TRXNS,
+		);
 
 		// this.consumeMissingMissingMethods();
 	}
@@ -545,13 +559,17 @@ class RabbitMq {
 		}
 	};
 
-	public consumeInternalTrnxs(channel: amqp.Channel): void {
+	public consumeInternalTrxnsQueue(
+		channel: amqp.Channel,
+		queueName: string,
+		requeueOnFail: boolean = true,
+	): void {
 		try {
 			channel?.consume(
-				QUEUE_NAME.MISSING_INTERNAL_TRXNS,
+				queueName,
 				async (message: amqp.Message | null) => {
 					console.log(
-						'consumeInternalTrnxs_message',
+						`${queueName}_message`,
 						message?.content.toString(),
 					);
 
@@ -564,15 +582,18 @@ class RabbitMq {
 								await processHelper.handleInternalTransactions(
 									blockNumber,
 								);
-							if (!isSuccess && blockNumber) {
+
+							// agar fail hua aur requeueOnFail true hai to dubara enqueue karna
+							if (!isSuccess && blockNumber && requeueOnFail) {
 								this.enqueueData(
 									QUEUE_NAME.CATCH_MISSING_INTERNAL_TRXNS,
 									blockNumber.toString(),
 								);
 							}
+
 							channel?.ack(message);
 						} catch (error) {
-							console.log('consumeInternalTrnxs Error', error);
+							console.log(`${queueName} Error`, error);
 							channel?.ack(message);
 						}
 					}
@@ -580,46 +601,7 @@ class RabbitMq {
 				{ noAck: false },
 			);
 		} catch (error) {
-			console.log('consumeInternalTrnxs Error Last', error);
-		}
-	}
-
-	public consumeInternalTrnxsFromCatch(channel: amqp.Channel): void {
-		try {
-			channel?.consume(
-				QUEUE_NAME.CATCH_MISSING_INTERNAL_TRXNS,
-				async (message: amqp.Message | null) => {
-					console.log(
-						'consumeInternalTrnxsFromCatch',
-						message?.content.toString(),
-					);
-
-					if (message) {
-						try {
-							const blockNumber = Number(
-								message.content.toString(),
-							);
-							const isSuccess =
-								await processHelper.handleInternalTransactions(
-									blockNumber,
-								);
-							if (!isSuccess && blockNumber) {
-								this.enqueueData(
-									QUEUE_NAME.CATCH_MISSING_INTERNAL_TRXNS,
-									blockNumber.toString(),
-								);
-							}
-							channel?.ack(message);
-						} catch (error) {
-							console.log('consumeInternalTrnxs Error', error);
-							channel?.ack(message);
-						}
-					}
-				},
-				{ noAck: false },
-			);
-		} catch (error) {
-			console.log('consumeInternalTrnxs Error Last', error);
+			console.log(`${queueName} Error Last`, error);
 		}
 	}
 }
