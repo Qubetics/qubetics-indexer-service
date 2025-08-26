@@ -20,7 +20,13 @@ import {
 } from '../interface/index';
 import { prisma } from '../lib/db';
 import logger from '../lib/logger';
-import { txType, exp, noExponent, hashString } from '../lib/utilities.helper';
+import {
+	txType,
+	exp,
+	noExponent,
+	hashString,
+	calculateBurnedAmount,
+} from '../lib/utilities.helper';
 import {
 	RedisService,
 	RabbitMqService,
@@ -29,6 +35,7 @@ import {
 import rabbitmqService from '../service/rabbitmq.service';
 import explorerHelper from './explorer.helper';
 import Web3Helper, { Web3SocketHelper } from './web3.helper';
+import redisHelper from '../service/redis.helper';
 
 class ProcessHelper {
 	/**
@@ -256,6 +263,13 @@ class ProcessHelper {
 					SOCKET_EVENT.LATEST_TRANSACTION,
 					transactionsArr,
 				);
+
+			/** save burned fees */
+			const burnedAmount = await calculateBurnedAmount();
+			await redisHelper.setString(
+				REDIS_KEY.TOTAL_BURNED_AMOUNT,
+				burnedAmount,
+			);
 
 			return {
 				block: blockExtractedData,

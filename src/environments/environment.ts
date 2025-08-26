@@ -49,6 +49,7 @@ class Environment implements IEnvironment {
 	public projectName: string;
 
 	public delegatorPrefix: string;
+	public initialSupply: number;
 
 	/**
 	 *
@@ -78,6 +79,7 @@ class Environment implements IEnvironment {
 		this.projectName = <string>process.env.PROJECT_NAME || 'qubetics';
 		this.delegatorPrefix =
 			<string>process.env.DELEGATOR_PREFIX || 'qubetics';
+		this.initialSupply = Number(process.env.INITIAL_SUPPLY);
 	}
 
 	/**

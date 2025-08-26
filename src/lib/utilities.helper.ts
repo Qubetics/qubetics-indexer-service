@@ -1,9 +1,10 @@
 import crypto from 'crypto';
 import axios, { AxiosResponse, Method } from 'axios';
-import { TRANSACTION_TYPE } from '../constant/response';
+import { CONST_NAME, REDIS_KEY, TRANSACTION_TYPE } from '../constant/response';
 import { CoinMarketData, ITimeStamp } from '../interface/index';
 import { prisma } from './db';
 import logger from './logger';
+import redisHelper from '../service/redis.helper';
 
 export function isEven(n: number) {
 	const res = n % 2 === 0;
@@ -498,4 +499,27 @@ export function serializeBigInt(dataVal: any): any {
 		);
 	}
 	return dataVal;
+}
+
+export async function calculateBurnedAmount() {
+	// initialSupply: number = environment.initialSupply,
+	// CurrentSupply: number,
+
+	try {
+		const apiUrl = environment.evmHost;
+
+		const getSupply: any = await axios.get(
+			`${apiUrl}/cosmos/bank/v1beta1/supply/by_denom?denom=${environment.symbol.toLowerCase()}`,
+		);
+
+		const initialSupply = environment.initialSupply;
+		const circulation_supply: number =
+			Number(getSupply.data.amount.amount) / CONST_NAME.ETH_EXP;
+
+		const returnValue = initialSupply - circulation_supply;
+		return returnValue;
+	} catch (error) {
+		console.log(error, 'error in calculateBurnedAmount');
+		return false;
+	}
 }

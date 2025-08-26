@@ -519,7 +519,7 @@ class CronService {
 		console.log('Syncing Old Blocks');
 		let processing = false;
 		new CronJob(
-			'*/5 * * * * *', // will run every 1  seconds.
+			'*/3 * * * * *', // will run every 4 seconds.
 			async () => {
 				if (!processing) {
 					processing = true;
