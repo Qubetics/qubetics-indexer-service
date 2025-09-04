@@ -489,7 +489,13 @@ class ExlorerHelper {
 			logger.info(coinMarketResult);
 
 			const coinPrice = coinResult?.price ?? CURRENT_DEFAULT_COIN_PRICE;
-			const circulating_supply = CURRENT_DEFAULT_CIRCULATING_SUPPLY;
+
+			let circulating_supply: number = await RedisService.getString(
+				REDIS_KEY.CIRCULATING_SUPPLY_FIGURE,
+			);
+			if (!circulating_supply) {
+				circulating_supply = CURRENT_DEFAULT_CIRCULATING_SUPPLY;
+			}
 			const marketCapital = coinPrice * circulating_supply;
 			console.log({ coinPrice, circulating_supply, marketCapital });
 			/**

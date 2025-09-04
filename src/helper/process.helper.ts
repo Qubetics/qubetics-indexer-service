@@ -33,9 +33,9 @@ import {
 	SocketEventEmitter,
 } from '../service/index';
 import rabbitmqService from '../service/rabbitmq.service';
+import redisHelper from '../service/redis.helper';
 import explorerHelper from './explorer.helper';
 import Web3Helper, { Web3SocketHelper } from './web3.helper';
-import redisHelper from '../service/redis.helper';
 
 class ProcessHelper {
 	/**
