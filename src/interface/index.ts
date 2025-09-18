@@ -79,6 +79,7 @@ export interface ITransactionPayload {
 	token?: string;
 	createdAt?: Date;
 	input?: string;
+	burnedFee: number;
 }
 
 export interface Log {

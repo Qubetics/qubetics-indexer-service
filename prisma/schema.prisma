@@ -73,7 +73,9 @@ model Transactions {
   txFee           String            @default("0") @db.VarChar(255)
   value           String            @default("0")
   token           String            @default("0")
-  input           String?            @default("") 
+  input           String?           @default("") 
+  burnedFee       Float            @default(0)
+
   createdAt       DateTime          @default(now())
   ContractLogs    ContractLogs[]
     internalTransactions InternalTransaction[]

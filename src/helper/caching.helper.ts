@@ -1,8 +1,9 @@
 import {
 	INCREMENT_SUPPLY_BY,
+	STATIC_BURNED_AMOUNT,
 	STATIC_CIRCULATING_SUPPLY_FIGURE,
 } from '../constant/constants';
-import { REDIS_KEY } from '../constant/response';
+import { CONST_NAME, REDIS_KEY } from '../constant/response';
 import { prisma } from '../lib/db';
 import { RedisService } from '../service';
 

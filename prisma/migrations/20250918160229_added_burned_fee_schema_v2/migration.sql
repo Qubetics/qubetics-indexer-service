@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "Transactions" ALTER COLUMN "burnedFee" SET DEFAULT 0,
+ALTER COLUMN "burnedFee" SET DATA TYPE DOUBLE PRECISION;

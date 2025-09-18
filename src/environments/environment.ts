@@ -80,7 +80,7 @@ class Environment implements IEnvironment {
 		this.projectName = <string>process.env.PROJECT_NAME || 'qubetics';
 		this.delegatorPrefix =
 			<string>process.env.DELEGATOR_PREFIX || 'qubetics';
-		this.initialSupply = Number(process.env.INITIAL_SUPPLY);
+		this.initialSupply = Number(process.env.INITIAL_SUPPLY) || 1361867964;
 	}
 
 	/**

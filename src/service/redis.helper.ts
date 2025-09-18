@@ -63,10 +63,10 @@ class RedisService {
 	public async setString<T>(key: string, data: T) {
 		try {
 			await this.client.set(key, JSON.stringify(data));
-			return false;
+			return true;
 		} catch (err) {
 			logger.error('error while setting the data into redis: ', err);
-			return true;
+			return false;
 		}
 	}
 
@@ -102,6 +102,17 @@ class RedisService {
 				err,
 			);
 			console.log('Key : ', key, 'value : ', data);
+		}
+	}
+
+	// get the string data from redis
+	public async incrementValue<T>(key: string, value: number) {
+		try {
+			await this.client.incrByFloat(key, value);
+			return true;
+		} catch (err) {
+			logger.error('Error while incrementing the data from redis: ', err);
+			return false;
 		}
 	}
 }

@@ -175,6 +175,9 @@ class ProcessHelper {
 				const gasPrice = Number(element?.gasPrice || CONST_NAME.ZERO);
 				const gas = element?.gas || CONST_NAME.ZERO;
 				const txFee = (gas * gasPrice) / CONST_NAME.POWER;
+				console.log('THE TXFWW', Number(txFee));
+				const burnedFee = (Number(txFee) * 0.2).toFixed(11);
+				console.log('burnedFeeTHE', burnedFee);
 				const txnType = txType(`${element.to}`, element.input);
 
 				if (txnType === TRANSACTION_TYPE.COIN_TRANSFER) _txns.coin++;
@@ -199,6 +202,7 @@ class ProcessHelper {
 					toAddress: element?.to || CONST_NAME.NA,
 					type: txnType,
 					value: exp(`${Number(element?.value) / CONST_NAME.POWER}`),
+					burnedFee: Number(burnedFee),
 				};
 
 				const txReceipt =
@@ -230,6 +234,11 @@ class ProcessHelper {
 						txQueue,
 						JSON.stringify(txExtractedData),
 					);
+
+				redisHelper.incrementValue(
+					REDIS_KEY.TOTAL_BURNED_AMOUNT,
+					Number(burnedFee),
+				);
 			}
 
 			// send stats update (coin transfer)
@@ -265,11 +274,6 @@ class ProcessHelper {
 				);
 
 			/** save burned fees */
-			const burnedAmount = await calculateBurnedAmount();
-			await redisHelper.setString(
-				REDIS_KEY.TOTAL_BURNED_AMOUNT,
-				burnedAmount,
-			);
 
 			return {
 				block: blockExtractedData,
@@ -355,7 +359,6 @@ class ProcessHelper {
 
 				default:
 					throw new Error('unknown transaction type.');
-					break;
 			}
 			return {
 				error: false,

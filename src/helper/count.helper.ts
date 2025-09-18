@@ -1,4 +1,5 @@
-import { REDIS_KEY, TRANSACTION_TYPE } from '../constant/response';
+import { STATIC_BURNED_AMOUNT } from '../constant/constants';
+import { CONST_NAME, REDIS_KEY, TRANSACTION_TYPE } from '../constant/response';
 import { StatsType } from '../interface';
 import { prisma } from '../lib/db';
 import logger from '../lib/logger';
@@ -26,6 +27,7 @@ class CountHelper {
 			addressCount,
 			deployedContractCount,
 			coinTranferTxnCount,
+			burnedAmount,
 		] = await Promise.all([
 			prisma.blocks.count(),
 			prisma.transactions.count(),
@@ -36,15 +38,36 @@ class CountHelper {
 					type: TRANSACTION_TYPE.COIN_TRANSFER,
 				},
 			}),
+			prisma.transactions.aggregate({
+				_sum: {
+					burnedFee: true,
+				},
+			}),
 		]);
 
 		// set the counts in memory for quick read
+
+		const getBurnedAmount =
+			Number(burnedAmount?._sum.burnedFee) +
+				Number(STATIC_BURNED_AMOUNT) || Number(STATIC_BURNED_AMOUNT);
+		console.log(
+			getBurnedAmount,
+			burnedAmount?._sum.burnedFee,
+			'getBurnedAmount',
+		);
+
+		await RedisService.setString(
+			REDIS_KEY.TOTAL_BURNED_AMOUNT,
+			getBurnedAmount,
+		);
+
 		this.counts = {
 			blockCount,
 			txCount,
 			addressCount,
 			deployedContractCount,
 			coinTranferTxnCount,
+			getBurnedAmount,
 		};
 
 		// add the count in redis (for quick read if service is crashed or restarted)

@@ -199,7 +199,6 @@ async function getValidatorsInfo(
 		// console.log(response?.data?.validators);
 		for (let i = 0; i < response?.data?.validators?.length; i += 1) {
 			const validator = response.data.validators[i];
-			console.log('validator-validator', validator);
 
 			const validatorOperaterAddress = validator.operator_address;
 
@@ -208,12 +207,6 @@ async function getValidatorsInfo(
 			const address = bech32.encode(
 				environment.delegatorPrefix,
 				decodeAddress.words,
-			);
-
-			console.log(
-				'validatorOperaterAddress1',
-				validatorOperaterAddress,
-				address,
 			);
 
 			// console.log('address', address);
@@ -260,10 +253,9 @@ async function getValidatorsInfo(
 			} else if (selfStakeValue) {
 				deleShares = selfStakeValue;
 			}
-			console.log('deleShares', deleShares);
+
 			const selfStake = deleShares || 0;
 			const delegatorCount = parseInt(stakeDetails.pagination.total, 10);
-			console.log('deleShares', deleShares, delegatorCount);
 
 			let status = RES_MSG.DEACTIVATING;
 
