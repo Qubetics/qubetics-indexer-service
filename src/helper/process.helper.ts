@@ -235,7 +235,7 @@ class ProcessHelper {
 						JSON.stringify(txExtractedData),
 					);
 
-				redisHelper.incrementValue(
+				await redisHelper.incrementValue(
 					REDIS_KEY.TOTAL_BURNED_AMOUNT,
 					Number(burnedFee),
 				);

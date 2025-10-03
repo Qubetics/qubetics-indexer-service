@@ -63,7 +63,7 @@ export const VERIFICATION_TYPE = {
 	FULLY_VERIFIED: 2,
 };
 
-export const CURRENT_DEFAULT_CIRCULATING_SUPPLY = 30542186;
+export const CURRENT_DEFAULT_CIRCULATING_SUPPLY = 340829898;
 // MIME types
 export const MIME_TYPES = {
 	JSON: 'application/json',

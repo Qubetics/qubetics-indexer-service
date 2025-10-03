@@ -50,11 +50,6 @@ class CountHelper {
 		const getBurnedAmount =
 			Number(burnedAmount?._sum.burnedFee) +
 				Number(STATIC_BURNED_AMOUNT) || Number(STATIC_BURNED_AMOUNT);
-		console.log(
-			getBurnedAmount,
-			burnedAmount?._sum.burnedFee,
-			'getBurnedAmount',
-		);
 
 		await RedisService.setString(
 			REDIS_KEY.TOTAL_BURNED_AMOUNT,

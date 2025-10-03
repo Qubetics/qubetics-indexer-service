@@ -231,18 +231,18 @@ async function getValidatorsInfo(
 						e.delegation.validator_address ===
 							validatorOperaterAddress,
 				);
+			console.log('stakeDetails1', stakeDetails);
+
 			if (valIndex < 0) {
 				console.log('Not found In the Previous API');
 				const getDelegationDetail: any = await getDelegationDetails(
 					apiRes,
 					address,
 				);
-				console.log(
-					'stakeDetails',
-					getDelegationDetail.delegation_responses[0].balance.amount,
-				);
+				console.log('stakeDetails2', getDelegationDetail);
 				selfStakeValue =
 					getDelegationDetail.delegation_responses[0].balance.amount;
+				stakeDetails.push(getDelegationDetail);
 			}
 
 			let deleShares = 0;
