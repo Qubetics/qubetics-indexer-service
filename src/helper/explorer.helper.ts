@@ -837,22 +837,12 @@ class ExlorerHelper {
 		try {
 			const provider = new ethers.JsonRpcProvider(environment.nodeLink);
 			console.log('calls-provider', provider);
-			// const tx = await provider.getTransaction(txHash);
-
-			// const receipt = await provider.getTransactionReceipt(txHash);
 
 			// Send raw RPC call
 			const trace = await provider.send('debug_traceTransaction', [
 				txHash,
 				{ tracer: 'callTracer' },
 			]);
-			// console.log(
-			// 	'calls-trace',
-			// 	trace,
-			// 	blockNumber,
-			// 	contractAddress,
-			// 	txHash,
-			// );
 
 			const onlyCallTraces: any = await this.flattenCallTraces(
 				trace,
@@ -862,10 +852,7 @@ class ExlorerHelper {
 				contractAddress,
 			);
 
-			// console.log('onlyCallTraces', onlyCallTraces);
-
 			if (onlyCallTraces.length > 0) {
-				// console.log('onlyCallTracesLENFG', onlyCallTraces);
 				await prisma.internalTransaction.createMany({
 					data: onlyCallTraces,
 					// skipDuplicates: true,
@@ -874,25 +861,6 @@ class ExlorerHelper {
 				console.log(
 					`${onlyCallTraces.length} CALL-type internal transactions saved.`,
 				);
-
-				// for (const t of onlyCallTraces) {
-				// 	if (t.type === 'CALL') {
-				// 		console.log('Checking txn', t);
-				// 		const toAddress = await Web3Helper.getCheckSumAddress(
-				// 			t.to,
-				// 		);
-				// 		const fromAddress = await Web3Helper.getCheckSumAddress(
-				// 			t.from,
-				// 		);
-
-				// 		console.log('TOADDRESS', toAddress);
-				// 		console.log('FROMADDRESS', fromAddress);
-
-				// 		// await this.updateBalance(fromAddress);
-				// 		// await this.updateBalance(toAddress);
-				// 		// await this.updateBalance(contractAddress);
-				// 	}
-				// }
 			} else {
 				console.log('No CALL-type internal transactions found.');
 			}
