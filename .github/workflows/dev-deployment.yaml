@@ -3,7 +3,7 @@ name: '[dev] Deploy qubetcs indexer service'
 on: 
   push:
     branches: 
-      - master
+      - v2-indexer-evm
 
 jobs:
   dev_deploy_qubetics_indexer_service:
