@@ -3,7 +3,7 @@ name: '[testnet] Deploy qubetics indexer'
 on: 
   push:
     branches: 
-      - master
+      - v2-indexer-evm
 
 jobs:
   deploy_qubetics_indexer:
