@@ -1039,24 +1039,24 @@ class ProcessHelper {
 							}
 						}
 
-						if (isContractExecution) {
-							await explorerHelper.getAndStoreInternalTxs(
-								element.hash,
-								blockno,
-								new Date(Number(block?.timestamp) * 1000),
-								txReceipt?.contractAddress ?? element?.to,
-							);
+						// if (isContractExecution) {
+						// 	await explorerHelper.getAndStoreInternalTxs(
+						// 		element.hash,
+						// 		blockno,
+						// 		new Date(Number(block?.timestamp) * 1000),
+						// 		txReceipt?.contractAddress ?? element?.to,
+						// 	);
 
-							// if (!stored) {
-							// 	console.log(
-							// 		`Failed to store internal tx for ${element.hash}, ${blockno}`,
-							// 	);
-							// 	RabbitMqService.enqueueData(
-							// 		QUEUE_NAME.CATCH_MISSING_INTERNAL_TRXNS,
-							// 		blockno.toString(),
-							// 	);
-							// }
-						}
+						// 	// if (!stored) {
+						// 	// 	console.log(
+						// 	// 		`Failed to store internal tx for ${element.hash}, ${blockno}`,
+						// 	// 	);
+						// 	// 	RabbitMqService.enqueueData(
+						// 	// 		QUEUE_NAME.CATCH_MISSING_INTERNAL_TRXNS,
+						// 	// 		blockno.toString(),
+						// 	// 	);
+						// 	// }
+						// }
 					}
 				}
 				return true;

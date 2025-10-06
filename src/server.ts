@@ -63,7 +63,7 @@ app.init()
 		CronService.checkPendingTransaction();
 		CronService.syncInternalTransactions();
 		CronService.circulateSupplyCron();
-		CronService.syncRecentInternalTransactions();
+		// CronService.syncRecentInternalTransactions();
 
 		// TODO(CP1): Need to remove in future not needed now
 		// CronService.scheduleCoinPriceUpdation();

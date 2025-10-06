@@ -59,18 +59,18 @@ class RabbitMq {
 		// this.consumeInternalTrnxsFromCatch(this.channel);
 		// this.consumeRecentInternalTrnxsFromCatch(this.channel);
 
-		this.consumeInternalTrxnsQueue(
-			this.channel,
-			QUEUE_NAME.MISSING_INTERNAL_TRXNS,
-		); // original
-		this.consumeInternalTrxnsQueue(
-			this.channel,
-			QUEUE_NAME.CATCH_MISSING_INTERNAL_TRXNS,
-		); // catch
-		this.consumeInternalTrxnsQueue(
-			this.channel,
-			QUEUE_NAME.RECENT_INTERNAL_TRXNS,
-		);
+		// this.consumeInternalTrxnsQueue(
+		// 	this.channel,
+		// 	QUEUE_NAME.MISSING_INTERNAL_TRXNS,
+		// ); // original
+		// this.consumeInternalTrxnsQueue(
+		// 	this.channel,
+		// 	QUEUE_NAME.CATCH_MISSING_INTERNAL_TRXNS,
+		// ); // catch
+		// this.consumeInternalTrxnsQueue(
+		// 	this.channel,
+		// 	QUEUE_NAME.RECENT_INTERNAL_TRXNS,
+		// );
 
 		// this.consumeMissingMissingMethods();
 	}
