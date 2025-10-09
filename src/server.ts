@@ -56,7 +56,7 @@ app.init()
 		new StatsUpdater().start();
 		processHelper.subscribeBlocksWs();
 		processHelper.processDowntimeBlock();
-		CronService.syncOldBlocks();
+		// CronService.syncOldBlocks();
 		CronService.coinPriceGraphUpdationSchedule();
 		CronService.checkValidators();
 		CronService.updateGraph();
