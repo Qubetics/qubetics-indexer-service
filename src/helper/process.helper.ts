@@ -39,6 +39,7 @@ class ProcessHelper {
 			const sub = Web3SocketHelper.web3Ws.eth.subscribe(
 				'newBlockHeaders',
 				async (error: any, blockHeader: any) => {
+					console.log('We are subscribing new block');
 					if (error) throw new Error(error);
 
 					console.log('New Block:', blockHeader.number);
