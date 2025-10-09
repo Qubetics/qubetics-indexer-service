@@ -605,12 +605,12 @@ class ProcessHelper {
 
 					const logsRes =
 						await explorerHelper.saveContractLogs(contractLogData);
-					await explorerHelper.getAndStoreInternalTxs(
-						tx.txhash,
-						tx.blocknumber,
-						tx.timestamp,
-						getToAddress,
-					);
+					// await explorerHelper.getAndStoreInternalTxs(
+					// 	tx.txhash,
+					// 	tx.blocknumber,
+					// 	tx.timestamp,
+					// 	getToAddress,
+					// );
 
 					if (await explorerHelper.ifContractExist(getToAddress)) {
 						await explorerHelper.updateContractExec(getToAddress);

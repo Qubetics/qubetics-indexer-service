@@ -51,7 +51,7 @@ class RabbitMq {
 		this.consumeValidatorDetails();
 		this.consumeStats();
 		this.consumeBlockTimeQue(this.channel);
-		this.consumeInternalTrnxs(this.channel);
+		// this.consumeInternalTrnxs(this.channel);
 
 		// this.consumeMissingMissingMethods();
 	}
