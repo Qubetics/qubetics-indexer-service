@@ -218,6 +218,7 @@ class CronService {
 
 	public async coinPriceGraphUpdationSchedule() {
 		try {
+			console.log('jobCallback,coinPriceGraphUpdationSchedule');
 			// TODO(REF CP1): Needed need to remove in future
 			// await this.restoreGraphs();
 
@@ -252,6 +253,7 @@ class CronService {
 			 * */
 			const jobCallback = async () => {
 				try {
+					console.log('START1');
 					const { error, data } =
 						await ExlorerHelper.saveLatestCoinPriceFromMarket();
 

@@ -433,6 +433,8 @@ class ExlorerHelper {
 	// OPTIMISE | CLEANUP(CP1): Need to refactor the logic and api calls of below latest coin price updation routine, separate the saving logic to cache storage (redis) and null safty
 	saveLatestCoinPriceFromMarket = async () => {
 		try {
+			console.log('START2,saveLatestCoinPriceFromMarket');
+
 			const { symbol, currency, coinMarketApi, coinMarketKey } =
 				environment;
 			const params = {
@@ -461,6 +463,7 @@ class ExlorerHelper {
 				self_reported_circulating_supply: number;
 				self_reported_market_cap: number;
 			};
+			console.log('START3,coinResult', coinResult);
 
 			// For this example, let (C) = 10,000 USD / 1 BTC and let (S) = 17,000,000 BTC.
 

@@ -35,6 +35,7 @@ export const getCoinPriceDataFromMarket = async (
 	interval = 'daily',
 ) => {
 	try {
+		console.log('Reached getCoinPriceDataFromMarket function');
 		const { symbol, currency, coinMarketApi, coinMarketKey } = environment;
 		// TODO(URL1): Need to create a small lib for parsing http urls for safely use.
 		const params = {
