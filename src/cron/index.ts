@@ -258,7 +258,12 @@ class CronService {
 					} = { daily: [], monthly: [] };
 
 					// Current day is not included
-					const pastTimePoint = moment().utc().subtract(29, 'day');
+					const pastTimePoint = moment().utc().subtract(28, 'day');
+					// const pastTimePoint = moment()
+					// 	.utc()
+					// 	.subtract(28, 'day')
+					// 	.startOf('day');
+
 					// Get day wise price data points from third party provider
 					const pastDaysPriceChartPoint =
 						await getCoinPriceDataFromMarket(
