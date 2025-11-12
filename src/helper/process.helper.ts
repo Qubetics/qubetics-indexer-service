@@ -303,7 +303,7 @@ class ProcessHelper {
 
 				if (!txCount) {
 					// First time, get the count from the database
-					txCount = await prisma.blocks.count();
+					txCount = await prisma.transactions.count();
 					await RedisService.setString(
 						REDIS_KEY.TRANSACTIONS_COUNT,
 						txCount,
