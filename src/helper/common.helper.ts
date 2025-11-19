@@ -45,6 +45,7 @@ const fetchRequest = async (
 				})
 				.catch((err) => {
 					console.log('err fetchRequest', err);
+					return false;
 				});
 		} catch (err) {
 			logger.error(

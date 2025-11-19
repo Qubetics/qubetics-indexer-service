@@ -123,7 +123,7 @@ const calculateData = async (): Promise<
 				Accept: 'application/json',
 			},
 			// timeout: CONST_NAME.THOUSAND,
-			timeout: 5000,
+			timeout: 10000,
 		});
 
 		const params = await getParams(apiRes);
