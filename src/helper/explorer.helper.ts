@@ -471,21 +471,30 @@ class ExlorerHelper {
 			 * if value is 0 for market cap from CMC : display self-reported market cap
 			 * if self-reported market cap is 0 : D = C * S where C is the last known price in USD and the S is the current supply
 			 */
+			if (coinResult) {
+				const coinMarketResult = {
+					price: coinResult.price.toString(),
+					volume24h: coinResult.volume24h.toString(),
+					volumeChange24h: coinResult.volumeChange24h.toString(),
+					percentChange1h: coinResult.percentChange1h.toString(),
+					percentChange24h: coinResult.percentChange24h.toString(),
+					percentChange7d: coinResult.percentChange7d.toString(),
+					percentChange30d: coinResult.percentChange30d.toString(),
+					symbol,
+					currency,
+				};
 
-			const coinMarketResult = {
-				price: coinResult.price.toString(),
-				volume24h: coinResult.volume24h.toString(),
-				volumeChange24h: coinResult.volumeChange24h.toString(),
-				percentChange1h: coinResult.percentChange1h.toString(),
-				percentChange24h: coinResult.percentChange24h.toString(),
-				percentChange7d: coinResult.percentChange7d.toString(),
-				percentChange30d: coinResult.percentChange30d.toString(),
-				symbol,
-				currency,
-			};
+				await RedisService.setString(
+					REDIS_KEY.MARKET_CAP_PRICE,
+					coinMarketResult,
+				);
+
+				await prisma.coinmarketInfo.create({
+					data: coinMarketResult,
+				});
+			}
 
 			logger.info('Price updation schedule running, Data below');
-			logger.info(coinMarketResult);
 
 			const coinPrice = coinResult?.price ?? CURRENT_DEFAULT_COIN_PRICE;
 			const circulating_supply = CURRENT_DEFAULT_CIRCULATING_SUPPLY;
@@ -507,18 +516,10 @@ class ExlorerHelper {
 			 * Uncomment till here
 			 */
 
-			await prisma.coinmarketInfo.create({
-				data: coinMarketResult,
-			});
-
 			await RedisService.setString(REDIS_KEY.MARKET_CAP, marketCapital);
 			await RedisService.setString(
 				REDIS_KEY.CIRCULATING_SUPPLY,
 				circulating_supply,
-			);
-			await RedisService.setString(
-				REDIS_KEY.MARKET_CAP_PRICE,
-				coinMarketResult,
 			);
 
 			await RedisService.setString(REDIS_KEY.COIN_PRICE, coinPrice);
