@@ -57,7 +57,7 @@ app.init()
 		processHelper.subscribeBlocksWs();
 		processHelper.processDowntimeBlock();
 		// CronService.syncOldBlocks();
-		CronService.coinPriceGraphUpdationSchedule();
+		// CronService.coinPriceGraphUpdationSchedule();
 		CronService.checkValidators();
 		CronService.updateGraph();
 		CronService.checkPendingTransaction();
