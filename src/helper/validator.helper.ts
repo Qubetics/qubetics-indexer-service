@@ -195,27 +195,20 @@ async function getValidatorsInfo(
 		);
 		const validators: ValidatorInfo[] = [];
 		const validatorAddresses: string[] = [];
-		// console.log(response?.data?.validators);
-		for (let i = 0; i < response?.data?.validators?.length; i += 1) {
+		let selfStakeValue = 0;
+		for (let i = 0; i < response?.data?.validators?.length; i++) {
 			const validator = response.data.validators[i];
+
 			const validatorOperaterAddress = validator.operator_address;
 
 			const decodeAddress = bech32.decode(validatorOperaterAddress);
-
 			const address = bech32.encode(
-				decodeAddress.prefix,
+				environment.address_prefix,
 				decodeAddress.words,
 			);
 
-			// console.log('address', address);
-			const data = bech32.fromWords(decodeAddress.words); // Convert 5-bit words to binary
-			// console.log(
-			// 	'decodeVALIDE',
-			// 	`0x${Buffer.from(data).toString('hex')}`,
-			// ); // Convert binary to hex
-
 			validatorAddresses.push(address);
-			const stakeDetails: any = await getValidatorStakeDetails(
+			let stakeDetails: any = await getValidatorStakeDetails(
 				apiRes,
 				validator.operator_address,
 			);
@@ -227,14 +220,54 @@ async function getValidatorsInfo(
 						e.delegation.validator_address ===
 							validatorOperaterAddress,
 				);
-			// console.log('valIndex', valIndex);
 
-			const deleShares =
-				stakeDetails?.delegation_responses[valIndex]?.delegation
-					.shares || 0;
+			if (valIndex < 0) {
+				console.log('Not found In the Previous API');
+				const getDelegationDetail: any = await getDelegationDetails(
+					apiRes,
+					address,
+				);
+				console.log('stakeDetails2', getDelegationDetail);
+
+				selfStakeValue =
+					getDelegationDetail?.delegation_responses[0]?.balance
+						.amount;
+				// if (getDelegationDetail?.delegation_responses.length > 0) {
+				// 	// stakeDetails.push([getDelegationDetail]);
+				// 	{stakeDetails,...getDelegationDetail}
+				// }
+				if (getDelegationDetail?.delegation_responses?.length > 0) {
+					stakeDetails = {
+						...stakeDetails,
+						delegation_responses: [
+							...stakeDetails.delegation_responses,
+							...getDelegationDetail.delegation_responses,
+						],
+						pagination: {
+							...stakeDetails.pagination,
+							// total update if needed:
+							total: (
+								Number(stakeDetails.pagination.total || 0) +
+								Number(
+									getDelegationDetail.pagination.total || 0,
+								)
+							).toString(),
+						},
+					};
+				}
+			}
+
+			let deleShares = 0;
+
+			if (stakeDetails?.delegation_responses[valIndex]?.balance?.amount) {
+				deleShares =
+					stakeDetails.delegation_responses[valIndex].balance?.amount;
+			} else if (selfStakeValue) {
+				deleShares = selfStakeValue;
+			}
+
 			const selfStake = deleShares || 0;
 			const delegatorCount = parseInt(stakeDetails.pagination.total, 10);
-			// console.log('deleShares', deleShares, delegatorCount);
 
 			let status = RES_MSG.DEACTIVATING;
 
@@ -267,7 +300,7 @@ async function getValidatorsInfo(
 
 		return validators;
 	} catch (err) {
-		// console.log('Error occurred while getting validator details', err);
+		console.log('Error occurred while getting validator details', err);
 		if (err instanceof Error) {
 			return { error: true, message: err.message };
 		}
@@ -443,6 +476,16 @@ function calculateRealAPR(
 	const blockProvision = params.annualProvisions / params.blocksPerYear;
 	const realProvision = blockProvision * blocksYearReal;
 	return nominalAPR * (realProvision / params.annualProvisions);
+}
+
+async function getDelegationDetails(
+	apiRes: AxiosInstance,
+	address: string,
+): Promise<ValidatorDelegations> {
+	const response: AxiosResponse = await apiRes.get(
+		`/cosmos/staking/v1beta1/delegations/${address}`,
+	);
+	return response.data;
 }
 
 export { calculateData, getValidatorsInfo };
