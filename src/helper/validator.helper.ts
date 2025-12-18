@@ -196,34 +196,23 @@ async function getValidatorsInfo(
 		const validators: ValidatorInfo[] = [];
 		const validatorAddresses: string[] = [];
 		let selfStakeValue = 0;
-		// console.log(response?.data?.validators);
-		for (let i = 0; i < response?.data?.validators?.length; i += 1) {
+		for (let i = 0; i < response?.data?.validators?.length; i++) {
 			const validator = response.data.validators[i];
 
 			const validatorOperaterAddress = validator.operator_address;
 
 			const decodeAddress = bech32.decode(validatorOperaterAddress);
-
 			const address = bech32.encode(
 				environment.delegatorPrefix,
 				decodeAddress.words,
 			);
 
-			// console.log('address', address);
-			// const data = bech32.fromWords(decodeAddress.words); // Convert 5-bit words to binary
-			// console.log(data, 'data');
-			// console.log(
-			// 	'decodeVALIDE',
-			// 	`0x${Buffer.from(data).toString('hex')}`,
-			// ); // Convert binary to hex
-
 			validatorAddresses.push(address);
-			const stakeDetails: any = await getValidatorStakeDetails(
+			let stakeDetails: any = await getValidatorStakeDetails(
 				apiRes,
 				validator.operator_address,
 			);
 
-			// console.log('STAKE_DETAILS', stakeDetails.delegation_responses);
 			const valIndex: number =
 				stakeDetails?.delegation_responses.findIndex(
 					(e: any) =>
@@ -231,7 +220,6 @@ async function getValidatorsInfo(
 						e.delegation.validator_address ===
 							validatorOperaterAddress,
 				);
-			console.log('stakeDetails1', stakeDetails);
 
 			if (valIndex < 0) {
 				console.log('Not found In the Previous API');
@@ -240,16 +228,40 @@ async function getValidatorsInfo(
 					address,
 				);
 				console.log('stakeDetails2', getDelegationDetail);
+
 				selfStakeValue =
-					getDelegationDetail.delegation_responses[0].balance.amount;
-				stakeDetails.push(getDelegationDetail);
+					getDelegationDetail?.delegation_responses[0]?.balance
+						.amount;
+				// if (getDelegationDetail?.delegation_responses.length > 0) {
+				// 	// stakeDetails.push([getDelegationDetail]);
+				// 	{stakeDetails,...getDelegationDetail}
+				// }
+				if (getDelegationDetail?.delegation_responses?.length > 0) {
+					stakeDetails = {
+						...stakeDetails,
+						delegation_responses: [
+							...stakeDetails.delegation_responses,
+							...getDelegationDetail.delegation_responses,
+						],
+						pagination: {
+							...stakeDetails.pagination,
+							// total update if needed:
+							total: (
+								Number(stakeDetails.pagination.total || 0) +
+								Number(
+									getDelegationDetail.pagination.total || 0,
+								)
+							).toString(),
+						},
+					};
+				}
 			}
 
 			let deleShares = 0;
 
 			if (stakeDetails?.delegation_responses[valIndex]?.balance?.amount) {
 				deleShares =
-					stakeDetails.delegation_responses[valIndex].balance.amount;
+					stakeDetails.delegation_responses[valIndex].balance?.amount;
 			} else if (selfStakeValue) {
 				deleShares = selfStakeValue;
 			}
@@ -288,7 +300,7 @@ async function getValidatorsInfo(
 
 		return validators;
 	} catch (err) {
-		// console.log('Error occurred while getting validator details', err);
+		console.log('Error occurred while getting validator details', err);
 		if (err instanceof Error) {
 			return { error: true, message: err.message };
 		}
