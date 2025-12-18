@@ -203,7 +203,7 @@ async function getValidatorsInfo(
 
 			const decodeAddress = bech32.decode(validatorOperaterAddress);
 			const address = bech32.encode(
-				environment.address_prefix,
+				environment.delegatorPrefix,
 				decodeAddress.words,
 			);
 

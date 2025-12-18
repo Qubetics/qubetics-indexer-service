@@ -48,6 +48,8 @@ class Environment implements IEnvironment {
 
 	public projectName: string;
 
+	public delegatorPrefix:string;
+
 	/**
 	 *
 	 * @param NODE_ENV
@@ -74,6 +76,8 @@ class Environment implements IEnvironment {
 		this.currency = <string>process.env.TOKEN_CURRENCY;
 		this.wsSync = process.env.WS_SYNC !== 'false';
 		this.projectName = <string>process.env.PROJECT_NAME || 'qubetics';
+		this.delegatorPrefix =
+			<string>process.env.DELEGATOR_PREFIX || 'qubetics';
 	}
 
 	/**
