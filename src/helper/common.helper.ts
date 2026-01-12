@@ -38,7 +38,7 @@ const fetchRequest = async (
 							res.data.data[symbol]?.self_reported_market_cap,
 						self_reported_circulating_supply:
 							res.data.data[symbol]
-								?.self_reported_circulating_supply,
+								?.self_reported_circulating_supply ?? 0,
 					};
 
 					resolve(coinMarketPrice);
