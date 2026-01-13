@@ -52,6 +52,7 @@ class Environment implements IEnvironment {
 
 	public initialSupply: number;
 
+	public nativeAPIUrl: string;
 	/**
 	 *
 	 * @param NODE_ENV
@@ -81,6 +82,8 @@ class Environment implements IEnvironment {
 		this.delegatorPrefix =
 			<string>process.env.DELEGATOR_PREFIX || 'qubetics';
 		this.initialSupply = Number(process.env.INITIAL_SUPPLY) || 1361867964;
+				this.nativeAPIUrl = <string>process.env.NATIVE_API_BASE_URL;
+
 	}
 
 	/**

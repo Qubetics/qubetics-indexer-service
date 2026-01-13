@@ -1,11 +1,17 @@
 import crypto from 'crypto';
 import axios, { AxiosResponse, Method } from 'axios';
-import { CONST_NAME, REDIS_KEY, RES_MSG, TRANSACTION_TYPE } from '../constant/response';
+import { STATIC_BURNED_AMOUNT } from '../constant/constants';
+import {
+	CONST_NAME,
+	REDIS_KEY,
+	RES_MSG,
+	TRANSACTION_TYPE,
+} from '../constant/response';
 import { CoinMarketData, ITimeStamp } from '../interface/index';
 import redisHelper from '../service/redis.helper';
 import { prisma } from './db';
 import logger from './logger';
-import { STATIC_BURNED_AMOUNT } from '../constant/constants';
+import { RedisService } from '../service';
 
 export function isEven(n: number) {
 	const res = n % 2 === 0;
@@ -525,70 +531,79 @@ export async function calculateBurnedAmount() {
 	}
 }
 
-  export async function getTotalSupply() {
-    try {
-      let burnedAmount:number = await redisHelper.getString(
-        REDIS_KEY.TOTAL_BURNED_AMOUNT,
-      );
-
-      if (!burnedAmount) {
-        /** save burned fees */
-        burnedAmount = await getBurnedAmount()
-        await redisHelper.setString(
-          REDIS_KEY.TOTAL_BURNED_AMOUNT,
-          burnedAmount,
-        );
-      }
-
-      const { initialSupply } = environment;
-
-      const totalSupply = initialSupply - burnedAmount;
-
-      return totalSupply;
-    } catch (err) {
-      logger.error("dashboard-Error", err);
-      return false;
-    }
-  }
-
-export async function calculateCirculatingSupply() {
+export async function getTotalSupply() {
 	try {
-		const apiUrl = `${environment.evmHost}/${environment.projectName}`;
-	//locked amount
-		const lockedSupply: any = await axios.get(
-			`${apiUrl}/validatorpool/locked_supply`,
+		let burnedAmount: number = await redisHelper.getString(
+			REDIS_KEY.TOTAL_BURNED_AMOUNT,
 		);
 
-		//total supply
+		if (!burnedAmount) {
+			/** save burned fees */
+			burnedAmount = await getBurnedAmount();
+			await redisHelper.setString(
+				REDIS_KEY.TOTAL_BURNED_AMOUNT,
+				burnedAmount,
+			);
+		}
 
-		const totalSupply :any = await getTotalSupply();
-		const locked_supply: number =
-			Number(lockedSupply.data.locked_supply) / CONST_NAME.ETH_EXP;
+		const { initialSupply } = environment;
 
-		const returnValue = totalSupply - locked_supply;
-		return returnValue;
-	} catch (error) {
-		console.log(error, 'error in calculateBurnedAmount');
-		return 0;
+		const totalSupply = initialSupply - burnedAmount;
+
+		return totalSupply;
+	} catch (err) {
+		logger.error('dashboard-Error', err);
+		return false;
 	}
 }
 
-  export async function getBurnedAmount() {
-    try {
-      const burnedAmount: any = await prisma.transactions.aggregate({
-        _sum: {
-          burnedFee: true,
-        },
-      });
+export async function calculateCirculatingSupply() {
+	try {
+			let circulationSupply = await RedisService.getString(
+				REDIS_KEY.CIRCULATING_SUPPLY,
+			);
+			if (!circulationSupply) {
+				const circulationSupplyUrl = environment.nativeAPIUrl;
+				const result = await axios.get(
+					circulationSupplyUrl + '/explorer/circulation-supply',
+				);
 
-      if (burnedAmount) {
-        return (
-          Number(burnedAmount?._sum.burnedFee) + Number(STATIC_BURNED_AMOUNT)
-        );
-      }
-      return Number(STATIC_BURNED_AMOUNT);
-    } catch (error) {
-      console.log(error, "error in getBurnedAmount");
-      return STATIC_BURNED_AMOUNT;
-    }
-  }
+				console.log(
+					result.data.data.circulationSupply,
+					'CRCLFRMNATIVE',
+				);
+				circulationSupply = result?.data?.data?.circulationSupply;
+				await RedisService.setStringWithExpiry(
+					REDIS_KEY.CIRCULATING_SUPPLY,
+					circulationSupply,
+					600,
+				);
+			}
+
+			return circulationSupply
+		} catch (err) {
+			logger.error('dashboard-Error', err);
+			return 0;
+		}
+}
+
+export async function getBurnedAmount() {
+	try {
+		const burnedAmount: any = await prisma.transactions.aggregate({
+			_sum: {
+				burnedFee: true,
+			},
+		});
+
+		if (burnedAmount) {
+			return (
+				Number(burnedAmount?._sum.burnedFee) +
+				Number(STATIC_BURNED_AMOUNT)
+			);
+		}
+		return Number(STATIC_BURNED_AMOUNT);
+	} catch (error) {
+		console.log(error, 'error in getBurnedAmount');
+		return STATIC_BURNED_AMOUNT;
+	}
+}

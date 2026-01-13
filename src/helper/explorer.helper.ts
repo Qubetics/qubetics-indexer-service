@@ -28,7 +28,10 @@ import {
 } from '../interface/index';
 import { prisma } from '../lib/db';
 import logger from '../lib/logger';
-import { calculateCirculatingSupply, convertBigIntToNumber } from '../lib/utilities.helper';
+import {
+	calculateCirculatingSupply,
+	convertBigIntToNumber,
+} from '../lib/utilities.helper';
 import { RedisService } from '../service/index';
 import rabbitmqService from '../service/rabbitmq.service';
 import { fetchRequest } from './common.helper';
@@ -501,12 +504,17 @@ class ExlorerHelper {
 			/**
 			 * Uncomment from here
 			 */
-let circulating_supply:number = coinResult?.circulatingSupply;
-			if(coinResult?.circulatingSupply === 0 || coinResult?.circulatingSupply === undefined){
+			let circulating_supply: number = coinResult?.circulatingSupply;
+			console.log(circulating_supply, "CMC-Circulation Supply");
+			if (
+				coinResult?.circulatingSupply === 0 ||
+				coinResult?.circulatingSupply === undefined
+			) {
 				circulating_supply = await calculateCirculatingSupply();
+				console.log(circulating_supply, "Calculated Circulation Supply");
 			}
 
-			console.log("circulating_supplyExpl",circulating_supply)
+			console.log('circulating_supplyExpl', circulating_supply);
 			// const circulating_supply =
 			// 	coinResult?.circulatingSupply !== 0
 			// 		? coinResult?.circulatingSupply
