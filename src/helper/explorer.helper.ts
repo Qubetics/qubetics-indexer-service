@@ -504,14 +504,17 @@ class ExlorerHelper {
 			/**
 			 * Uncomment from here
 			 */
-			let circulating_supply: number = coinResult?.circulatingSupply;
-			console.log(circulating_supply, "CMC-Circulation Supply");
+			let circulating_supply: any = coinResult?.circulatingSupply;
+			console.log(circulating_supply, 'CMC-Circulation Supply');
 			if (
 				coinResult?.circulatingSupply === 0 ||
 				coinResult?.circulatingSupply === undefined
 			) {
 				circulating_supply = await calculateCirculatingSupply();
-				console.log(circulating_supply, "Calculated Circulation Supply");
+				console.log(
+					circulating_supply,
+					'Calculated Circulation Supply',
+				);
 			}
 
 			console.log('circulating_supplyExpl', circulating_supply);

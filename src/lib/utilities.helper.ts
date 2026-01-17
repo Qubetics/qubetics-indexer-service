@@ -8,10 +8,10 @@ import {
 	TRANSACTION_TYPE,
 } from '../constant/response';
 import { CoinMarketData, ITimeStamp } from '../interface/index';
+import { RedisService } from '../service';
 import redisHelper from '../service/redis.helper';
 import { prisma } from './db';
 import logger from './logger';
-import { RedisService } from '../service';
 
 export function isEven(n: number) {
 	const res = n % 2 === 0;
@@ -559,32 +559,29 @@ export async function getTotalSupply() {
 
 export async function calculateCirculatingSupply() {
 	try {
-			let circulationSupply = await RedisService.getString(
-				REDIS_KEY.CIRCULATING_SUPPLY,
+		let circulationSupply = await RedisService.getString(
+			REDIS_KEY.CIRCULATING_SUPPLY,
+		);
+		if (!circulationSupply) {
+			const circulationSupplyUrl = environment.nativeAPIUrl;
+			const result = await axios.get(
+				`${circulationSupplyUrl}/explorer/circulation-supply`,
 			);
-			if (!circulationSupply) {
-				const circulationSupplyUrl = environment.nativeAPIUrl;
-				const result = await axios.get(
-					circulationSupplyUrl + '/explorer/circulation-supply',
-				);
 
-				console.log(
-					result.data.data.circulationSupply,
-					'CRCLFRMNATIVE',
-				);
-				circulationSupply = result?.data?.data?.circulationSupply;
-				await RedisService.setStringWithExpiry(
-					REDIS_KEY.CIRCULATING_SUPPLY,
-					circulationSupply,
-					600,
-				);
-			}
-
-			return circulationSupply
-		} catch (err) {
-			logger.error('dashboard-Error', err);
-			return 0;
+			console.log(result.data.data.circulationSupply, 'CRCLFRMNATIVE');
+			circulationSupply = result?.data?.data?.circulationSupply;
+			await RedisService.setStringWithExpiry(
+				REDIS_KEY.CIRCULATING_SUPPLY,
+				circulationSupply,
+				600,
+			);
 		}
+
+		return circulationSupply;
+	} catch (err) {
+		logger.error('dashboard-Error', err);
+		return 0;
+	}
 }
 
 export async function getBurnedAmount() {
