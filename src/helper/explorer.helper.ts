@@ -522,8 +522,7 @@ class ExlorerHelper {
 			const marketCapital: number =
 				coinResult?.marketCap !== 0
 					? coinResult?.marketCap
-					: coinResult?.self_reported_market_cap ??
-						coinPrice * circulating_supply;
+					: coinPrice * circulating_supply;
 			/**
 			 * Uncomment till here
 			 */
