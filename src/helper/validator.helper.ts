@@ -11,7 +11,6 @@ import logger from '../lib/logger';
 import { getDigitsAfterE } from '../lib/utilities.helper';
 import { RedisService, SocketEventEmitter } from '../service';
 import ExlorerHelper from './explorer.helper';
-import explorerHelper from './explorer.helper';
 
 // Fetch various parameters needed for calculations
 async function getParams(apiRes: AxiosInstance): Promise<Params | false> {
@@ -308,7 +307,7 @@ async function getValidatorsInfo(
 			await ExlorerHelper.saveValidatorData(validatorData);
 		}
 
-		explorerHelper.deleteValidatorData(validatorAddresses);
+		ExlorerHelper.deleteValidatorData(validatorAddresses);
 
 		return validators;
 	} catch (err) {
