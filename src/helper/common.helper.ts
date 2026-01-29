@@ -1,8 +1,8 @@
 import axios, { AxiosResponse, Method, AxiosInstance } from 'axios';
+import { ALLOCATIONS, TOTAL_SUPPLY } from '../constant/response';
+import type { SupplyResult, Breakdown } from '../interface/index';
 import logger from '../lib/logger';
 
-import type { SupplyResult, Breakdown } from '../interface/index';
-import { ALLOCATIONS, TOTAL_SUPPLY } from '../constant/response';
 import { getCurrentDateTime, roundToDecimals } from '../lib/utilities.helper';
 import explorerHelper from './explorer.helper';
 
@@ -59,8 +59,9 @@ export const fetchRequest = async (
 		}
 	});
 
-	export function calculateSupplyDetails(): SupplyResult {
+export function calculateSupplyDetails(): SupplyResult {
 	const currentDate = getCurrentDateTime();
+	// const currentDate = new Date('2026-02-03T13:00:00.000Z');
 
 	const breakdown: Breakdown = {};
 	let totalUnlocked = 0;
@@ -99,4 +100,3 @@ export function getCirculatingSupply(): number {
 	const result = calculateSupplyDetails();
 	return result.circulating_supply;
 }
-

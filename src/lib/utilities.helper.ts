@@ -7,12 +7,12 @@ import {
 	RES_MSG,
 	TRANSACTION_TYPE,
 } from '../constant/response';
+import { calculateSupplyDetails } from '../helper/common.helper';
 import { CoinMarketData, ITimeStamp } from '../interface/index';
 import { RedisService } from '../service';
 import redisHelper from '../service/redis.helper';
 import { prisma } from './db';
 import logger from './logger';
-import { calculateSupplyDetails } from '../helper/common.helper';
 
 export function isEven(n: number) {
 	const res = n % 2 === 0;
@@ -560,13 +560,11 @@ export async function getTotalSupply() {
 
 export async function calculateCirculatingSupply() {
 	try {
-		let circulatingSupply = await RedisService.getString(
-			REDIS_KEY.CIRCULATING_SUPPLY,
-		);
-		if (!circulatingSupply) {
-
-			const supplyDetails = await calculateSupplyDetails();
-				circulatingSupply = supplyDetails.circulating_supply;
+		
+		let circulatingSupply = 0;
+		// if (!circulatingSupply) {
+			const supplyDetails = calculateSupplyDetails();
+			circulatingSupply = supplyDetails.circulating_supply;
 
 			// const circulationSupplyUrl = environment.nativeAPIUrl;
 			// const result = await axios.get(
@@ -575,12 +573,7 @@ export async function calculateCirculatingSupply() {
 
 			// console.log(result.data.data.circulationSupply, 'CRCLFRMNATIVE');
 			// circulationSupply = result?.data?.data?.circulationSupply;
-			await RedisService.setStringWithExpiry(
-				REDIS_KEY.CIRCULATING_SUPPLY,
-				circulatingSupply,
-				600,
-			);
-		}
+		// }
 
 		return circulatingSupply;
 	} catch (err) {
@@ -609,7 +602,6 @@ export async function getBurnedAmount() {
 		return STATIC_BURNED_AMOUNT;
 	}
 }
-
 
 /**
  * Utility Helper Functions
@@ -654,7 +646,7 @@ export function getCurrentDateTime(): Date {
 			now.getUTCFullYear(),
 			now.getUTCMonth(),
 			now.getUTCDate(),
-			13,
+			0,
 			0,
 			0,
 			0,

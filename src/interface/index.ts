@@ -366,8 +366,6 @@ export interface StatsType {
 	txnCount?: number;
 }
 
-
-
 /**
  * Type Definitions for TICS Circulating Supply Calculator
  */

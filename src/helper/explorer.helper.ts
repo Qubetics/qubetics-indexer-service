@@ -5,14 +5,14 @@ import {
 	CURRENT_DEFAULT_CIRCULATING_SUPPLY,
 	CURRENT_DEFAULT_COIN_PRICE,
 	VERIFICATION_TYPE,
-	
 } from '../constant/constants';
 import {
 	RES_MSG,
 	REDIS_KEY,
 	CONST_NAME,
 	TRANSACTION_STATUS,
-	QUEUE_NAME,NETWORK_LAUNCH
+	QUEUE_NAME,
+	NETWORK_LAUNCH,
 } from '../constant/response';
 import {
 	IBlock,
@@ -26,18 +26,18 @@ import {
 	IContractLogs,
 	ValidatorData,
 	ITextSignature,
-	Allocation
+	Allocation,
 } from '../interface/index';
 import { prisma } from '../lib/db';
 import logger from '../lib/logger';
 import {
 	calculateCirculatingSupply,
 	convertBigIntToNumber,
-	addMonths
+	addMonths,
 } from '../lib/utilities.helper';
 import { RedisService } from '../service/index';
 import rabbitmqService from '../service/rabbitmq.service';
-import { fetchRequest } from './common.helper';
+import { calculateSupplyDetails, fetchRequest } from './common.helper';
 import SocketHelper from './socket.helper';
 import Web3Helper from './web3.helper';
 
@@ -509,17 +509,14 @@ class ExlorerHelper {
 			 */
 			// let circulating_supply: any = coinResult?.circulatingSupply;
 
-			let circulating_supply = await calculateCirculatingSupply();
-				console.log(
-					circulating_supply,
-					'Calculated Circulation Supply',
-				);
-				
+			const circulating_supply = await calculateCirculatingSupply();
+			console.log(circulating_supply, 'Calculated Circulation Supply');
+
 			// if (
 			// 	coinResult?.circulatingSupply === 0 ||
 			// 	coinResult?.circulatingSupply === undefined
 			// ) {
-				
+
 			// }
 
 			console.log('circulating_supplyExpl', circulating_supply);
@@ -540,7 +537,7 @@ class ExlorerHelper {
 			});
 
 			await RedisService.setString(REDIS_KEY.MARKET_CAP, marketCapital);
-			
+
 			await RedisService.setString(
 				REDIS_KEY.MARKET_CAP_PRICE,
 				coinMarketResult,
@@ -646,10 +643,11 @@ class ExlorerHelper {
 		| false
 	> => {
 		try {
-			const supply =
-				(await RedisService.getString<number>(
-					REDIS_KEY.CIRCULATING_SUPPLY,
-				)) || 0;
+			// const supply =
+			// 	(await RedisService.getString<number>(
+			// 		REDIS_KEY.CIRCULATING_SUPPLY,
+			// 	)) || 0;
+			const supply = calculateSupplyDetails().circulating_supply;
 			const marketCap =
 				(await RedisService.getString<number>(REDIS_KEY.MARKET_CAP)) ||
 				0;
@@ -1000,55 +998,70 @@ class ExlorerHelper {
 		}
 	};
 
+	/**
+	 * Calculate the unlocked amount for a specific allocation at current time.
+	 *
+	 * This function handles three types of vesting schedules:
+	 * 1. Standard vesting: cliff period → linear vesting
+	 * 2. TGE unlock (Ecosystem): 10% at launch → cliff → linear vesting
+	 * 3. Delayed start (Team/Advisors): delayed start date → linear vesting
+	 *
+	 * @param name - Name of the allocation (used for special case handling)
+	 * @param alloc - Allocation configuration object
+	 * @param currentDate - Date to calculate unlocked amount for
+	 * @returns Amount of tokens unlocked at the given date
+	 */
+	getUnlocked(name: string, alloc: Allocation, currentDate: Date): number {
+		const { total } = alloc;
+		const tgePct = alloc.tge;
 
-/**
- * Calculate the unlocked amount for a specific allocation at current time.
- *
- * This function handles three types of vesting schedules:
- * 1. Standard vesting: cliff period → linear vesting
- * 2. TGE unlock (Ecosystem): 10% at launch → cliff → linear vesting
- * 3. Delayed start (Team/Advisors): delayed start date → linear vesting
- *
- * @param name - Name of the allocation (used for special case handling)
- * @param alloc - Allocation configuration object
- * @param currentDate - Date to calculate unlocked amount for
- * @returns Amount of tokens unlocked at the given date
- */
-getUnlocked(
-	name: string,
-	alloc: Allocation,
-	currentDate: Date,
-): number {
-	const { total } = alloc;
-	const tgePct = alloc.tge;
+		// Determine cliff end date (no nested ternary)
+		let cliffEnd: Date | null = null;
 
-	// Determine cliff end date (no nested ternary)
-	let cliffEnd: Date | null = null;
+		if (alloc.delay) {
+			cliffEnd = alloc.delay;
+		} else if (alloc.cliff !== null) {
+			cliffEnd = addMonths(NETWORK_LAUNCH, alloc.cliff);
+		}
 
-	if (alloc.delay) {
-		cliffEnd = alloc.delay;
-	} else if (alloc.cliff !== null) {
-		cliffEnd = addMonths(NETWORK_LAUNCH, alloc.cliff);
-	}
+		// Determine vesting end date
+		const vestEnd = cliffEnd ? addMonths(cliffEnd, alloc.vest) : null;
 
-	// Determine vesting end date
-	const vestEnd = cliffEnd ? addMonths(cliffEnd, alloc.vest) : null;
-
-	// If no cliff end date, nothing is unlocked
-	if (!cliffEnd) {
-		return 0;
-	}
-
-	// Special case: Ecosystem has TGE unlock at network launch
-	if (name === 'ecosystem' && tgePct > 0) {
-		const tgeAmount = total * (tgePct / 100);
-
-		if (currentDate < NETWORK_LAUNCH) {
+		// If no cliff end date, nothing is unlocked
+		if (!cliffEnd) {
 			return 0;
 		}
 
+		// Special case: Ecosystem has TGE unlock at network launch
+		if (name === 'ecosystem' && tgePct > 0) {
+			const tgeAmount = total * (tgePct / 100);
+
+			if (currentDate < NETWORK_LAUNCH) {
+				return 0;
+			}
+
+			if (currentDate < cliffEnd) {
+				return tgeAmount;
+			}
+
+			if (vestEnd && currentDate >= vestEnd) {
+				return total;
+			}
+
+			if (vestEnd) {
+				const vestingAmount = total - tgeAmount;
+				const progress =
+					(currentDate.getTime() - cliffEnd.getTime()) /
+					(vestEnd.getTime() - cliffEnd.getTime());
+
+				return tgeAmount + vestingAmount * Math.min(1.0, progress);
+			}
+		}
+
+		// Standard allocations (including Team / Advisors)
+
 		if (currentDate < cliffEnd) {
-			return tgeAmount;
+			return 0;
 		}
 
 		if (vestEnd && currentDate >= vestEnd) {
@@ -1056,69 +1069,49 @@ getUnlocked(
 		}
 
 		if (vestEnd) {
-			const vestingAmount = total - tgeAmount;
 			const progress =
 				(currentDate.getTime() - cliffEnd.getTime()) /
 				(vestEnd.getTime() - cliffEnd.getTime());
 
-			return tgeAmount + vestingAmount * Math.min(1.0, progress);
+			return total * Math.min(1.0, progress);
 		}
-	}
 
-	// Standard allocations (including Team / Advisors)
-
-	if (currentDate < cliffEnd) {
 		return 0;
 	}
 
-	if (vestEnd && currentDate >= vestEnd) {
-		return total;
+	/**
+	 * Get the cliff end date for an allocation.
+	 *
+	 * @param alloc - Allocation configuration
+	 * @returns Cliff end date or null if no cliff
+	 */
+	getCliffEndDate(alloc: Allocation): Date | null {
+		if (alloc.delay) {
+			return alloc.delay;
+		}
+
+		if (alloc.cliff === null) {
+			return null;
+		}
+
+		return addMonths(NETWORK_LAUNCH, alloc.cliff);
 	}
 
-	if (vestEnd) {
-		const progress =
-			(currentDate.getTime() - cliffEnd.getTime()) /
-			(vestEnd.getTime() - cliffEnd.getTime());
+	/**
+	 * Get the vesting end date for an allocation.
+	 *
+	 * @param alloc - Allocation configuration
+	 * @returns Vesting end date or null if no vesting period
+	 */
+	getVestEndDate(alloc: Allocation): Date | null {
+		const cliffEnd = this.getCliffEndDate(alloc);
 
-		return total * Math.min(1.0, progress);
+		if (cliffEnd === null) {
+			return null;
+		}
+
+		return addMonths(cliffEnd, alloc.vest);
 	}
-
-	return 0;
-}
-
-/**
- * Get the cliff end date for an allocation.
- *
- * @param alloc - Allocation configuration
- * @returns Cliff end date or null if no cliff
- */
- getCliffEndDate(alloc: Allocation): Date | null {
-	if (alloc.delay) {
-		return alloc.delay;
-	}
-
-	if (alloc.cliff === null) {
-		return null;
-	}
-
-	return addMonths(NETWORK_LAUNCH, alloc.cliff);
-}
-
-/**
- * Get the vesting end date for an allocation.
- *
- * @param alloc - Allocation configuration
- * @returns Vesting end date or null if no vesting period
- */
- getVestEndDate(alloc: Allocation): Date | null {
-	const cliffEnd = this.getCliffEndDate(alloc);
-
-	if (cliffEnd === null) {
-		return null;
-	}
-
-	return addMonths(cliffEnd, alloc.vest);
-}
 
 	// updateLogs = async (decodedInput: any) => {
 	// 	try {
