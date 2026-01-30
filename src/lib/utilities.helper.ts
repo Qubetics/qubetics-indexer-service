@@ -560,19 +560,18 @@ export async function getTotalSupply() {
 
 export async function calculateCirculatingSupply() {
 	try {
-		
 		let circulatingSupply = 0;
 		// if (!circulatingSupply) {
-			const supplyDetails = calculateSupplyDetails();
-			circulatingSupply = supplyDetails.circulating_supply;
+		const supplyDetails = calculateSupplyDetails();
+		circulatingSupply = supplyDetails.circulating_supply;
 
-			// const circulationSupplyUrl = environment.nativeAPIUrl;
-			// const result = await axios.get(
-			// 	`${circulationSupplyUrl}/explorer/circulation-supply`,
-			// );
+		// const circulationSupplyUrl = environment.nativeAPIUrl;
+		// const result = await axios.get(
+		// 	`${circulationSupplyUrl}/explorer/circulation-supply`,
+		// );
 
-			// console.log(result.data.data.circulationSupply, 'CRCLFRMNATIVE');
-			// circulationSupply = result?.data?.data?.circulationSupply;
+		// console.log(result.data.data.circulationSupply, 'CRCLFRMNATIVE');
+		// circulationSupply = result?.data?.data?.circulationSupply;
 		// }
 
 		return circulatingSupply;
@@ -646,7 +645,7 @@ export function getCurrentDateTime(): Date {
 			now.getUTCFullYear(),
 			now.getUTCMonth(),
 			now.getUTCDate(),
-			0,
+			13,
 			0,
 			0,
 			0,
