@@ -106,11 +106,11 @@ function calculateAPY(
 
 const calculateData = async (): Promise<
 	| {
-			validator: number;
-			totalValidator: number;
-			bondedRate: number;
-			apy: number;
-	  }
+		validator: number;
+		totalValidator: number;
+		bondedRate: number;
+		apy: number;
+	}
 	| { error: boolean; message: string }
 > => {
 	try {
@@ -222,13 +222,13 @@ async function getValidatorsInfo(
 				validator.operator_address,
 			);
 
-			console.log('STAKE_DETAILS', stakeDetails);
+			// console.log('STAKE_DETAILS', stakeDetails);
 			const valIndex: number =
 				stakeDetails?.delegation_responses.findIndex(
 					(e: any) =>
 						e.delegation.delegator_address === address &&
 						e.delegation.validator_address ===
-							validatorOperaterAddress,
+						validatorOperaterAddress,
 				);
 
 			if (valIndex < 0) {
@@ -324,11 +324,11 @@ async function getValidatorsInfo(
 
 const getDashboardData = async (): Promise<
 	| {
-			validator: number;
-			totalValidator: number;
-			bondedRate: number;
-			apy: number;
-	  }
+		validator: number;
+		totalValidator: number;
+		bondedRate: number;
+		apy: number;
+	}
 	| { error: boolean; message: string }
 > => {
 	try {
@@ -459,8 +459,7 @@ async function getBlocksPerYearReal(lcdApi: AxiosInstance): Promise<number> {
 				? CONST_NAME.THOUSAND
 				: CONST_NAME.ONE;
 		const response2: AxiosResponse = await lcdApi.get(
-			`/cosmos/base/tendermint/v1beta1/blocks/${
-				Number(block1.height) - blockRange
+			`/cosmos/base/tendermint/v1beta1/blocks/${Number(block1.height) - blockRange
 			}`,
 		);
 
@@ -474,7 +473,7 @@ async function getBlocksPerYearReal(lcdApi: AxiosInstance): Promise<number> {
 
 		return Math.ceil(yearMilisec / blockMilisec);
 	} catch (error) {
-		logger.log('error', 'Error occurred while getting blocks per year.');
+		console.log('error', 'Error occurred while getting blocks per year.');
 		return -CONST_NAME.ONE;
 	}
 }

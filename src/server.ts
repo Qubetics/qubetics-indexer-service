@@ -56,6 +56,7 @@ app.init()
 		new StatsUpdater().start();
 		processHelper.subscribeBlocksWs();
 		processHelper.processDowntimeBlock();
+		CronService.syncBlocks();
 		CronService.syncOldBlocks();
 		CronService.coinPriceGraphUpdationSchedule();
 		CronService.checkValidators();
@@ -64,17 +65,6 @@ app.init()
 		CronService.syncInternalTransactions();
 		// CronService.circulateSupplyCron();
 		CronService.syncRecentInternalTransactions();
-
-		// TODO(CP1): Need to remove in future not needed now
-		// CronService.scheduleCoinPriceUpdation();
-
-		// processHelper.ProcessMissedBlockAndTxn();
-
-		// if (environment.wsSync) {
-		// 	await processHelper.subscribeBlocksWs();
-		// } else {
-		// 	CronService.syncBlocks();
-		// }
 	})
 	.catch((err: Error) => {
 		logger.info('Error while app initlization\n');

@@ -166,15 +166,17 @@ export class Web3SocketHelper {
 
 		// bind event for failure for reconnect
 		web3wsProvider.on('end', () => {
+			logger.info('Web3 WebSocket connection ended. Reconnecting...');
 			web3wsProvider.connect();
 		});
 
 		web3wsProvider.on('disconnect', () => {
+			logger.warn('Web3 WebSocket disconnected. Reconnecting...');
 			web3wsProvider.connect();
 		});
 
 		web3wsProvider.on('error', () => {
-			// console.log('error while making connection with evm... ');
+			logger.error('Web3 WebSocket error occurred. Reconnecting...');
 			web3wsProvider.connect();
 		});
 

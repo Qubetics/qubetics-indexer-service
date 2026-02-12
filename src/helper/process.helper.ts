@@ -46,37 +46,56 @@ class ProcessHelper {
 			const sub = Web3SocketHelper.web3Ws.eth.subscribe(
 				'newBlockHeaders',
 				async (error: any, blockHeader: any) => {
-					if (error) throw new Error(error);
+					if (error) {
+						logger.error('Error in block header subscription callback:', error);
+						return;
+					}
 
-					console.log('New Block:', blockHeader.number);
-					const latestBlockNo = Number(blockHeader?.number);
-					const blockQueue = `${QUEUE_NAME.BLOCKS}_${latestBlockNo
-						.toString()
-						.slice(-1)}`;
-					this.processblock(
-						latestBlockNo,
-						QUEUE_NAME.TRANSACTIONS,
-						blockQueue,
-						true,
-						true,
-					);
+					if (blockHeader) {
+						console.log('New Block Received via WS:', blockHeader.number);
+						const latestBlockNo = Number(blockHeader?.number);
+						const blockQueue = `${QUEUE_NAME.BLOCKS}_${latestBlockNo
+							.toString()
+							.slice(-1)}`;
+						this.processblock(
+							latestBlockNo,
+							QUEUE_NAME.TRANSACTIONS,
+							blockQueue,
+							true,
+							true,
+						);
 
-					await RedisService.setString(
-						CONST_NAME.LATEST_BLOCK,
-						latestBlockNo,
-					);
+						await RedisService.setString(
+							CONST_NAME.LATEST_BLOCK,
+							latestBlockNo,
+						);
+					}
 				},
 			);
 
-			sub.on('connected', () => {
-				logger.info('Latest block indexing started.');
+			sub.on('connected', (subscriptionId) => {
+				logger.info(`Latest block indexing started. Subscription ID: ${subscriptionId}`);
 			});
 
 			sub.on('error', (err) => {
-				logger.error('Error to latest block subscription', err);
+				logger.error('Subscription error occurred:', err);
 			});
+
+			sub.on('changed', (log) => {
+				logger.info('Subscription changed:', log);
+			});
+
+			// Re-subscribe logic if the connection is lost or subscription ends
+			const provider = Web3SocketHelper.web3Ws?.currentProvider as any;
+			if (provider && typeof provider.on === 'function') {
+				provider.on('end', () => {
+					logger.warn('WS Provider ended, attempting to re-subscribe in 10s...');
+					setTimeout(() => this.subscribeBlocksWs(), 10000);
+				});
+			}
 		} catch (err: any) {
-			logger.error('Error in subscribe block\n', err);
+			logger.error('Error in subscribe block setup, retrying in 10s...\n', err);
+			setTimeout(() => this.subscribeBlocksWs(), 10000);
 		}
 	}
 
@@ -97,8 +116,6 @@ class ProcessHelper {
 		emitBlock: boolean = false,
 	) {
 		try {
-			// const blockno = 818206;
-
 			const block = await Web3SocketHelper.web3Ws.eth.getBlock(
 				blockno,
 				true,
@@ -147,6 +164,7 @@ class ProcessHelper {
 					JSON.stringify(blockExtractedData),
 				);
 
+			console.log("blockExtractedData", blockExtractedData)
 			/* emit the latest block data */
 			if (emitBlock)
 				SocketEventEmitter.emitMessage(
@@ -305,7 +323,7 @@ class ProcessHelper {
 					txnCount: Number(
 						(Number(transactions.gas) *
 							Number(transactions.gasPrice)) /
-							1e18,
+						1e18,
 					),
 				}),
 			);
@@ -976,10 +994,12 @@ class ProcessHelper {
 
 	public async conusmeBlockTime(blockCount: number) {
 		try {
-			const currentBlock: any = await Web3Helper.getBlockNumber();
+			const latestBlock = await Web3Helper.getBlockNumber();
+			const lastBlock = BigInt(latestBlock).toString();
+			logger.info(`Fallback Sync: Latest on-chain block: ${lastBlock}`);
 			const blockNumbers = Array.from(
 				{ length: blockCount + 1 },
-				(_, i) => Number(currentBlock) - i,
+				(_, i) => Number(latestBlock) - i,
 			);
 
 			// Fetch all blocks in parallel
