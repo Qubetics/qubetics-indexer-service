@@ -283,7 +283,7 @@ class CronService {
 					// Current month is not included
 					const pastMonthTimePoint = moment()
 						.utc()
-						.subtract(11, 'month');
+						.subtract(2, 'month');
 
 					// Get month wise price data points from third party provider
 					const pastMonthsPriceChartPoint =
@@ -463,7 +463,9 @@ class CronService {
 				CONST_NAME.LATEST_BLOCK,
 			);
 
-			logger.info(`Cron Sync Check: Latest=${lastBlock}, LastProcessed=${updateBlock}`);
+			logger.info(
+				`Cron Sync Check: Latest=${lastBlock}, LastProcessed=${updateBlock}`,
+			);
 
 			if (!updateBlock) {
 				await RedisService.setString(

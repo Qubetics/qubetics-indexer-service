@@ -106,11 +106,11 @@ function calculateAPY(
 
 const calculateData = async (): Promise<
 	| {
-		validator: number;
-		totalValidator: number;
-		bondedRate: number;
-		apy: number;
-	}
+			validator: number;
+			totalValidator: number;
+			bondedRate: number;
+			apy: number;
+	  }
 	| { error: boolean; message: string }
 > => {
 	try {
@@ -228,7 +228,7 @@ async function getValidatorsInfo(
 					(e: any) =>
 						e.delegation.delegator_address === address &&
 						e.delegation.validator_address ===
-						validatorOperaterAddress,
+							validatorOperaterAddress,
 				);
 
 			if (valIndex < 0) {
@@ -324,11 +324,11 @@ async function getValidatorsInfo(
 
 const getDashboardData = async (): Promise<
 	| {
-		validator: number;
-		totalValidator: number;
-		bondedRate: number;
-		apy: number;
-	}
+			validator: number;
+			totalValidator: number;
+			bondedRate: number;
+			apy: number;
+	  }
 	| { error: boolean; message: string }
 > => {
 	try {
@@ -459,7 +459,8 @@ async function getBlocksPerYearReal(lcdApi: AxiosInstance): Promise<number> {
 				? CONST_NAME.THOUSAND
 				: CONST_NAME.ONE;
 		const response2: AxiosResponse = await lcdApi.get(
-			`/cosmos/base/tendermint/v1beta1/blocks/${Number(block1.height) - blockRange
+			`/cosmos/base/tendermint/v1beta1/blocks/${
+				Number(block1.height) - blockRange
 			}`,
 		);
 

@@ -47,12 +47,18 @@ class ProcessHelper {
 				'newBlockHeaders',
 				async (error: any, blockHeader: any) => {
 					if (error) {
-						logger.error('Error in block header subscription callback:', error);
+						logger.error(
+							'Error in block header subscription callback:',
+							error,
+						);
 						return;
 					}
 
 					if (blockHeader) {
-						console.log('New Block Received via WS:', blockHeader.number);
+						console.log(
+							'New Block Received via WS:',
+							blockHeader.number,
+						);
 						const latestBlockNo = Number(blockHeader?.number);
 						const blockQueue = `${QUEUE_NAME.BLOCKS}_${latestBlockNo
 							.toString()
@@ -74,7 +80,9 @@ class ProcessHelper {
 			);
 
 			sub.on('connected', (subscriptionId) => {
-				logger.info(`Latest block indexing started. Subscription ID: ${subscriptionId}`);
+				logger.info(
+					`Latest block indexing started. Subscription ID: ${subscriptionId}`,
+				);
 			});
 
 			sub.on('error', (err) => {
@@ -89,12 +97,17 @@ class ProcessHelper {
 			const provider = Web3SocketHelper.web3Ws?.currentProvider as any;
 			if (provider && typeof provider.on === 'function') {
 				provider.on('end', () => {
-					logger.warn('WS Provider ended, attempting to re-subscribe in 10s...');
+					logger.warn(
+						'WS Provider ended, attempting to re-subscribe in 10s...',
+					);
 					setTimeout(() => this.subscribeBlocksWs(), 10000);
 				});
 			}
 		} catch (err: any) {
-			logger.error('Error in subscribe block setup, retrying in 10s...\n', err);
+			logger.error(
+				'Error in subscribe block setup, retrying in 10s...\n',
+				err,
+			);
 			setTimeout(() => this.subscribeBlocksWs(), 10000);
 		}
 	}
@@ -164,7 +177,7 @@ class ProcessHelper {
 					JSON.stringify(blockExtractedData),
 				);
 
-			console.log("blockExtractedData", blockExtractedData)
+			console.log('blockExtractedData', blockExtractedData);
 			/* emit the latest block data */
 			if (emitBlock)
 				SocketEventEmitter.emitMessage(
@@ -323,7 +336,7 @@ class ProcessHelper {
 					txnCount: Number(
 						(Number(transactions.gas) *
 							Number(transactions.gasPrice)) /
-						1e18,
+							1e18,
 					),
 				}),
 			);
