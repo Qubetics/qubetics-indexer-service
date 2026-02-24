@@ -62,7 +62,7 @@ app.init()
 		CronService.checkValidators();
 		CronService.updateGraph();
 		CronService.checkPendingTransaction();
-		CronService.syncInternalTransactions();
+		// CronService.syncInternalTransactions();
 		// CronService.circulateSupplyCron();
 		CronService.syncRecentInternalTransactions();
 	})

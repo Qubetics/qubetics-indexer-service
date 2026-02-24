@@ -177,7 +177,7 @@ class ProcessHelper {
 					JSON.stringify(blockExtractedData),
 				);
 
-			console.log('blockExtractedData', blockExtractedData);
+			// console.log('blockExtractedData', blockExtractedData);
 			/* emit the latest block data */
 			if (emitBlock)
 				SocketEventEmitter.emitMessage(
@@ -336,7 +336,7 @@ class ProcessHelper {
 					txnCount: Number(
 						(Number(transactions.gas) *
 							Number(transactions.gasPrice)) /
-							1e18,
+						1e18,
 					),
 				}),
 			);

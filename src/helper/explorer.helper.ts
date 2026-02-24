@@ -636,10 +636,10 @@ class ExlorerHelper {
 
 	getRedisValue = async (): Promise<
 		| {
-			supply: number;
-			marketCap: number;
-			validatorData: ValidatorData;
-		}
+				supply: number;
+				marketCap: number;
+				validatorData: ValidatorData;
+		  }
 		| false
 	> => {
 		try {

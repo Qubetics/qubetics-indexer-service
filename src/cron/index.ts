@@ -305,10 +305,10 @@ class CronService {
 						monthlyZeroFilledPoints[
 							monthlyZeroFilledPoints.length - 1
 						].value = error
-							? pastDaysPriceChartPoint[
+								? pastDaysPriceChartPoint[
 									pastDaysPriceChartPoint.length - 1
 								].value
-							: data?.price;
+								: data?.price;
 						priceChartData.monthly =
 							monthlyZeroFilledPoints.reverse();
 					} else
@@ -628,7 +628,7 @@ class CronService {
 					blocknumber: latestBlockNo,
 				},
 			});
-			console.log(checkBlockNumber, 'checkBlockNumber');
+			// console.log(checkBlockNumber, 'checkBlockNumber');
 			const nextBlock = +latestBlockNo + 1;
 
 			if (checkBlockNumber) {
@@ -731,7 +731,7 @@ class CronService {
 				CONST_NAME.LATEST_BLOCK,
 			);
 
-			console.log('RECENT BLOCK', lastBlock);
+			console.log('RECENT_INTERNAL_TXN_BLOCK', lastBlock, 'LATEST_BLOCK', latestBlock);
 
 			if (!lastBlock) {
 				return false;
@@ -753,7 +753,7 @@ class CronService {
 					await web3Helper.getDetailByBlockNumber(lastBlock);
 
 				const transactions: any = block?.transactions || [];
-				console.log('transactions', transactions);
+				// console.log('transactions', transactions);
 				if (transactions?.length) {
 					for (const element of transactions) {
 						const tx = await web3Helper.getTxByHash(element);
