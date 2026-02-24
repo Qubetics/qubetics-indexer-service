@@ -478,8 +478,9 @@ class CronService {
 				if (+updateBlock < +lastBlock) {
 					const latestBlockNo = Number(updateBlock);
 
+					const blockQueueShard = `${QUEUE_NAME.BLOCKS}_${latestBlockNo.toString().slice(-1)}`;
 					RabbitMqService.enqueueData(
-						QUEUE_NAME.BLOCKS,
+						blockQueueShard,
 						latestBlockNo.toString(),
 					);
 
@@ -494,9 +495,7 @@ class CronService {
 							i <= Number(lastBlock);
 							i += 1
 						) {
-							const blockQueue = `${QUEUE_NAME.DOWNTIME_BLOCK}_${i
-								.toString()
-								.slice(-1)}`;
+							const blockQueue = `${QUEUE_NAME.DOWNTIME_BLOCK}`;
 							// saving missed block to downtime block Queue
 							RabbitMqService.enqueueData(
 								blockQueue,
