@@ -63,13 +63,7 @@ class ProcessHelper {
 						const blockQueue = `${QUEUE_NAME.BLOCKS}_${latestBlockNo
 							.toString()
 							.slice(-1)}`;
-						this.processblock(
-							latestBlockNo,
-							QUEUE_NAME.TRANSACTIONS,
-							blockQueue,
-							true,
-							true,
-						);
+						RabbitMqService.enqueueData(blockQueue, latestBlockNo.toString());
 
 						await RedisService.setString(
 							CONST_NAME.LATEST_BLOCK,
@@ -196,81 +190,78 @@ class ProcessHelper {
 			/* emit  analytics */
 			SocketEventEmitter.emitMessage(SOCKET_EVENT.ANALYTICS, analytics);
 
-			// contract and coin transafer transactions
+			// contract and coin transfer transactions
 			const _txns = { contractDeployment: 0, coin: 0 };
 
-			/* eslint-disable no-await-in-loop */
-			// Disable the rule for the next line
-			// eslint-disable-next-line no-restricted-syntax
-			for (const element of transactions) {
-				const gasPrice = Number(element?.gasPrice || CONST_NAME.ZERO);
-				const gas = element?.gas || CONST_NAME.ZERO;
-				const txFee = (gas * gasPrice) / CONST_NAME.POWER;
-				console.log('THE TXFWW', Number(txFee));
-				const burnedFee = (Number(txFee) * 0.2).toFixed(11);
-				console.log('burnedFeeTHE', burnedFee);
-				const txnType = txType(`${element.to}`, element.input);
+			// Parallelly fetch transaction receipts and process them
+			const transactionsWithReceipts = await Promise.all(
+				transactions.map(async (element) => {
+					const gasPrice = Number(element?.gasPrice || CONST_NAME.ZERO);
+					const gas = element?.gas || CONST_NAME.ZERO;
+					const txFee = (gas * gasPrice) / CONST_NAME.POWER;
+					const burnedFee = (Number(txFee) * 0.2).toFixed(11);
+					const txnType = txType(`${element.to}`, element.input);
 
-				if (txnType === TRANSACTION_TYPE.COIN_TRANSFER) _txns.coin++;
-				else if (txnType === TRANSACTION_TYPE.CONTRACT_CREATION)
-					_txns.contractDeployment++;
+					if (txnType === TRANSACTION_TYPE.COIN_TRANSFER) _txns.coin++;
+					else if (txnType === TRANSACTION_TYPE.CONTRACT_CREATION)
+						_txns.contractDeployment++;
 
-				const txExtractedData: ITransactionPayload = {
-					gas,
-					gasPrice,
-					logs: [],
-					createdAt: new Date(),
-					txFee: exp(`${txFee}`),
-					blockhash: block?.hash,
-					input: element.input,
-					txhash: element?.hash,
-					contractAddress: CONST_NAME.NA,
-					timestamp: new Date(Number(block?.timestamp) * 1000),
-					blocknumber: Number(block.number),
-					token: CONST_NAME.ZERO.toString(),
-					fromAddress: element?.from,
-					status: TRANSACTION_STATUS.PENDING,
-					toAddress: element?.to || CONST_NAME.NA,
-					type: txnType,
-					value: exp(`${Number(element?.value) / CONST_NAME.POWER}`),
-					burnedFee: Number(burnedFee),
-				};
+					const txExtractedData: ITransactionPayload = {
+						gas,
+						gasPrice,
+						logs: [],
+						createdAt: new Date(),
+						txFee: exp(`${txFee}`),
+						blockhash: block?.hash,
+						input: element.input,
+						txhash: element?.hash,
+						contractAddress: CONST_NAME.NA,
+						timestamp: new Date(Number(block?.timestamp) * 1000),
+						blocknumber: Number(block.number),
+						token: CONST_NAME.ZERO.toString(),
+						fromAddress: element?.from,
+						status: TRANSACTION_STATUS.PENDING,
+						toAddress: element?.to || CONST_NAME.NA,
+						type: txnType,
+						value: exp(`${Number(element?.value) / CONST_NAME.POWER}`),
+						burnedFee: Number(burnedFee),
+					};
 
-				const txReceipt =
-					await Web3SocketHelper.web3Ws.eth.getTransactionReceipt(
-						element.hash,
+					const txReceipt = await Web3SocketHelper.web3Ws.eth.getTransactionReceipt(element.hash);
+
+					if (txReceipt) {
+						txExtractedData.status = txReceipt?.status
+							? TRANSACTION_STATUS.SUCCESS
+							: TRANSACTION_STATUS.FAILED;
+						txExtractedData.contractAddress =
+							txReceipt?.contractAddress ||
+							txExtractedData.contractAddress;
+						txExtractedData.gas = txReceipt.gasUsed;
+						txExtractedData.logs = txReceipt.logs || [];
+					} else {
+						const savedPendingTransaction =
+							(await RedisService.getString<any>(REDIS_KEY.PENDING_TX)) || [];
+						savedPendingTransaction.push(txExtractedData);
+						await RedisService.setString(
+							REDIS_KEY.PENDING_TX,
+							savedPendingTransaction,
+						);
+					}
+
+					if (txQueue) {
+						RabbitMqService.enqueueData(txQueue, JSON.stringify(txExtractedData));
+					}
+
+					await redisHelper.incrementValue(
+						REDIS_KEY.TOTAL_BURNED_AMOUNT,
+						Number(burnedFee),
 					);
 
-				if (txReceipt) {
-					txExtractedData.status = txReceipt?.status
-						? TRANSACTION_STATUS.SUCCESS
-						: TRANSACTION_STATUS.FAILED;
-					txExtractedData.contractAddress =
-						txReceipt?.contractAddress ||
-						txExtractedData.contractAddress;
-					txExtractedData.gas = txReceipt.gasUsed;
-					txExtractedData.logs = txReceipt.logs || [];
-				} else {
-					const savedPendingTransaction =
-						await RedisService.getString<any>(REDIS_KEY.PENDING_TX);
-					savedPendingTransaction.push(txExtractedData);
-					await RedisService.setString(
-						REDIS_KEY.PENDING_TX,
-						savedPendingTransaction,
-					);
-				}
-				transactionsArr.push(txExtractedData);
-				if (txQueue)
-					RabbitMqService.enqueueData(
-						txQueue,
-						JSON.stringify(txExtractedData),
-					);
+					return txExtractedData;
+				})
+			);
 
-				await redisHelper.incrementValue(
-					REDIS_KEY.TOTAL_BURNED_AMOUNT,
-					Number(burnedFee),
-				);
-			}
+			transactionsArr.push(...transactionsWithReceipts);
 
 			// send stats update (coin transfer)
 			if (_txns.coin)
@@ -776,6 +767,7 @@ class ProcessHelper {
 				false,
 			);
 			if (res?.block?.blocknumber) {
+				console.log("res.block-saveDowntimeAndErrBlock", res.block)
 				await explorerHelper.saveBlockData(res.block);
 				return true;
 			}

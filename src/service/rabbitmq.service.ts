@@ -441,58 +441,76 @@ class RabbitMq {
 				channel?.consume(
 					`${QUEUE_NAME.BLOCKS}_${i}`,
 					async (message: amqp.Message | null) => {
-						setTimeout(async () => {
-							if (message) {
-								try {
-									const blockData = JSON.parse(
-										message.content.toString(),
+						if (!message) return;
+						try {
+							const content = message.content.toString();
+							let blockData;
+
+							if (content.startsWith('{')) {
+								blockData = JSON.parse(content);
+							} else {
+								// It's a raw block number, fetch it in the worker
+								const blockNumber = Number(content);
+								const processed = await processHelper.processblock(
+									blockNumber,
+									QUEUE_NAME.TRANSACTIONS,
+									null,
+									true,
+									true
+								);
+								blockData = processed?.block;
+							}
+
+							if (!blockData) {
+								channel?.ack(message);
+								return;
+							}
+
+							console.log("blockData-consumeBlocks", blockData?.blocknumber || blockData)
+							const isSuccess =
+								await explorerHelper.saveBlockData(
+									blockData,
+								);
+
+							if (!isSuccess.error) {
+								// Retrieve the block count from Redis or the database
+								let blockCount =
+									await RedisService.getString(
+										REDIS_KEY.BLOCKS_COUNT,
 									);
-									const isSuccess =
-										await explorerHelper.saveBlockData(
-											blockData,
-										);
 
-									if (!isSuccess.error) {
-										// Retrieve the block count from Redis or the database
-										let blockCount =
-											await RedisService.getString(
-												REDIS_KEY.BLOCKS_COUNT,
-											);
-
-										if (!blockCount) {
-											// First time, get the count from the database
-											blockCount =
-												await prisma.blocks.count();
-											await RedisService.setString(
-												REDIS_KEY.BLOCKS_COUNT,
-												blockCount,
-											);
-										} else {
-											// Increment the block count
-											blockCount = Number(blockCount) + 1;
-											await RedisService.setString(
-												REDIS_KEY.BLOCKS_COUNT,
-												blockCount,
-											);
-										}
-									}
-									if (
-										isSuccess?.error &&
-										blockData?.blocknumber
-									) {
-										this.enqueueData(
-											QUEUE_NAME.ERROR_BLOCK,
-											blockData.blocknumber.toString(),
-										);
-									}
-
-									channel?.ack(message);
-								} catch (error) {
-									console.log('consumeBlocks Error', error);
-									channel?.nack(message, false, false); // Do not requeue
+								if (!blockCount) {
+									// First time, get the count from the database
+									blockCount =
+										await prisma.blocks.count();
+									await RedisService.setString(
+										REDIS_KEY.BLOCKS_COUNT,
+										blockCount,
+									);
+								} else {
+									// Increment the block count
+									blockCount = Number(blockCount) + 1;
+									await RedisService.setString(
+										REDIS_KEY.BLOCKS_COUNT,
+										blockCount,
+									);
 								}
 							}
-						}, 5000);
+							if (
+								isSuccess?.error &&
+								blockData?.blocknumber
+							) {
+								this.enqueueData(
+									QUEUE_NAME.ERROR_BLOCK,
+									blockData.blocknumber.toString(),
+								);
+							}
+
+							channel?.ack(message);
+						} catch (error) {
+							console.log('consumeBlocks Error', error);
+							channel?.nack(message, false, false); // Do not requeue
+						}
 					},
 					{ noAck: false },
 				);

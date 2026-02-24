@@ -23,6 +23,7 @@ import {
 } from '../constant/response';
 import cachingHelper from '../helper/caching.helper';
 import ExlorerHelper from '../helper/explorer.helper';
+import processHelper from '../helper/process.helper';
 
 import socketHelper from '../helper/socket.helper';
 import {
@@ -478,7 +479,8 @@ class CronService {
 				if (+updateBlock < +lastBlock) {
 					const latestBlockNo = Number(updateBlock);
 
-					const blockQueueShard = `${QUEUE_NAME.BLOCKS}_${latestBlockNo.toString().slice(-1)}`;
+					const blockQueueShard = `${QUEUE_NAME.BLOCKS
+						}_${latestBlockNo.toString().slice(-1)}`;
 					RabbitMqService.enqueueData(
 						blockQueueShard,
 						latestBlockNo.toString(),
@@ -730,7 +732,12 @@ class CronService {
 				CONST_NAME.LATEST_BLOCK,
 			);
 
-			console.log('RECENT_INTERNAL_TXN_BLOCK', lastBlock, 'LATEST_BLOCK', latestBlock);
+			console.log(
+				'RECENT_INTERNAL_TXN_BLOCK',
+				lastBlock,
+				'LATEST_BLOCK',
+				latestBlock,
+			);
 
 			if (!lastBlock) {
 				return false;
