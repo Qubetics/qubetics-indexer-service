@@ -305,10 +305,10 @@ class CronService {
 						monthlyZeroFilledPoints[
 							monthlyZeroFilledPoints.length - 1
 						].value = error
-								? pastDaysPriceChartPoint[
+							? pastDaysPriceChartPoint[
 									pastDaysPriceChartPoint.length - 1
 								].value
-								: data?.price;
+							: data?.price;
 						priceChartData.monthly =
 							monthlyZeroFilledPoints.reverse();
 					} else

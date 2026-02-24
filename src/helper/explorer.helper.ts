@@ -636,10 +636,10 @@ class ExlorerHelper {
 
 	getRedisValue = async (): Promise<
 		| {
-			supply: number;
-			marketCap: number;
-			validatorData: ValidatorData;
-		}
+				supply: number;
+				marketCap: number;
+				validatorData: ValidatorData;
+		  }
 		| false
 	> => {
 		try {
@@ -886,7 +886,9 @@ class ExlorerHelper {
 			console.log('error-getAndStoreInternalTxs', error);
 			if (
 				error.code === 'P2002' ||
-				error.message?.includes('version mismatch on immutable IAVL tree') ||
+				error.message?.includes(
+					'version mismatch on immutable IAVL tree',
+				) ||
 				error.message?.includes('Version has either been pruned') ||
 				error.message?.includes('failed to load state at height')
 			) {
