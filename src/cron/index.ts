@@ -558,7 +558,7 @@ class CronService {
 				return true;
 			}
 
-			let latestBlockNo = Number(updateBlock);
+			const latestBlockNo = Number(updateBlock);
 
 			// Fast-forward past pruned range when floor is known
 			if (pruningFloor && latestBlockNo < Number(pruningFloor)) {
