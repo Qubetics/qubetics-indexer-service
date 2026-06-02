@@ -306,10 +306,10 @@ class CronService {
 						monthlyZeroFilledPoints[
 							monthlyZeroFilledPoints.length - 1
 						].value = error
-								? pastDaysPriceChartPoint[
+							? pastDaysPriceChartPoint[
 									pastDaysPriceChartPoint.length - 1
 								].value
-								: data?.price;
+							: data?.price;
 						priceChartData.monthly =
 							monthlyZeroFilledPoints.reverse();
 					} else
@@ -479,8 +479,9 @@ class CronService {
 				if (+updateBlock < +lastBlock) {
 					const latestBlockNo = Number(updateBlock);
 
-					const blockQueueShard = `${QUEUE_NAME.BLOCKS
-						}_${latestBlockNo.toString().slice(-1)}`;
+					const blockQueueShard = `${
+						QUEUE_NAME.BLOCKS
+					}_${latestBlockNo.toString().slice(-1)}`;
 					RabbitMqService.enqueueData(
 						blockQueueShard,
 						latestBlockNo.toString(),
@@ -539,25 +540,39 @@ class CronService {
 
 	async processOldBlock() {
 		try {
-			// const latestBlock = await web3Helper.getBlockNumber();
-			const lastBlock = BigInt(1).toString();
-			console.log('processOldBlock', lastBlock);
+			const pruningFloor = await RedisService.getString<number>(
+				REDIS_KEY.PRUNING_FLOOR,
+			);
+
 			const updateBlock = await RedisService.getString<number>(
 				CONST_NAME.LATEST_OLD_BLOCK,
 			);
 			console.log('updateBlock', updateBlock);
 
 			if (!updateBlock) {
+				const startBlock = pruningFloor ? Number(pruningFloor) : 1;
 				await RedisService.setString(
 					CONST_NAME.LATEST_OLD_BLOCK,
-					+lastBlock,
+					startBlock,
 				);
+				return true;
 			}
-			console.log('updateBlock', updateBlock);
 
-			const latestBlockNo = Number(updateBlock);
+			let latestBlockNo = Number(updateBlock);
 
-			const nextBlock = +updateBlock + 1;
+			// Fast-forward past pruned range when floor is known
+			if (pruningFloor && latestBlockNo < Number(pruningFloor)) {
+				console.log(
+					`processOldBlock: fast-forwarding from ${latestBlockNo} to pruning floor ${pruningFloor}`,
+				);
+				await RedisService.setString(
+					CONST_NAME.LATEST_OLD_BLOCK,
+					Number(pruningFloor),
+				);
+				return true;
+			}
+
+			const nextBlock = latestBlockNo + 1;
 
 			const blockQueue = `${QUEUE_NAME.DOWNTIME_BLOCK}`;
 			RabbitMqService.enqueueData(blockQueue, latestBlockNo.toString());
@@ -606,10 +621,12 @@ class CronService {
 			);
 
 			console.log('processInternal-lastBlock', lastBlock);
-			// let latestBlockNo = 727282;
-			let latestBlockNo = 708158;
+			const pruningFloor = await RedisService.getString<number>(
+				REDIS_KEY.PRUNING_FLOOR,
+			);
+			// If no progress pointer yet, start from the pruning floor (or 0 if floor unknown)
+			let latestBlockNo = pruningFloor ? Number(pruningFloor) : 0;
 
-			// const revisedBlock = 687616;
 			if (lastBlock) {
 				console.log('lastBlock-lastBlock', lastBlock);
 				latestBlockNo = Number(lastBlock);

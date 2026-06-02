@@ -48,8 +48,7 @@ model Blocks {
   gasLimit         BigInt
   gasUsed          BigInt
   createdAt        DateTime @default(now())
-    internalTransactions InternalTransaction[]
-    
+  internalTransactions InternalTransaction[]
 
 
   @@index([blocknumber, blockhash])
@@ -73,15 +72,20 @@ model Transactions {
   txFee           String            @default("0") @db.VarChar(255)
   value           String            @default("0")
   token           String            @default("0")
-  input           String?           @default("") 
+  input           String?            @default("") 
+  createdAt       DateTime          @default(now())
   burnedFee       Float            @default(0)
 
-  createdAt       DateTime          @default(now())
   ContractLogs    ContractLogs[]
-    internalTransactions InternalTransaction[]
+  internalTransactions InternalTransaction[]
 
 
   @@index([type, txhash, contractAddress, fromAddress, toAddress])
+  @@index([fromAddress])
+  @@index([toAddress])
+  @@index([contractAddress])
+  @@index([createdAt])
+  @@index([timestamp])
 }
 
 model CoinTransaferTx {
@@ -269,5 +273,8 @@ model InternalTransaction {
   @@map("internal_transaction")
   @@index([txnHash])
   @@index([blockNumber])
+  @@index([fromAddress])
+  @@index([toAddress])
    @@unique([txnHash, toAddress])
+  @@index([createdAt])
 }

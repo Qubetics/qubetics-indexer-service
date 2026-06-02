@@ -451,13 +451,14 @@ class RabbitMq {
 							} else {
 								// It's a raw block number, fetch it in the worker
 								const blockNumber = Number(content);
-								const processed = await processHelper.processblock(
-									blockNumber,
-									QUEUE_NAME.TRANSACTIONS,
-									null,
-									true,
-									true
-								);
+								const processed =
+									await processHelper.processblock(
+										blockNumber,
+										QUEUE_NAME.TRANSACTIONS,
+										null,
+										true,
+										true,
+									);
 								blockData = processed?.block;
 							}
 
@@ -466,23 +467,18 @@ class RabbitMq {
 								return;
 							}
 
-							console.log("blockData-consumeBlocks", blockData?.blocknumber || blockData)
 							const isSuccess =
-								await explorerHelper.saveBlockData(
-									blockData,
-								);
+								await explorerHelper.saveBlockData(blockData);
 
 							if (!isSuccess.error) {
 								// Retrieve the block count from Redis or the database
-								let blockCount =
-									await RedisService.getString(
-										REDIS_KEY.BLOCKS_COUNT,
-									);
+								let blockCount = await RedisService.getString(
+									REDIS_KEY.BLOCKS_COUNT,
+								);
 
 								if (!blockCount) {
 									// First time, get the count from the database
-									blockCount =
-										await prisma.blocks.count();
+									blockCount = await prisma.blocks.count();
 									await RedisService.setString(
 										REDIS_KEY.BLOCKS_COUNT,
 										blockCount,
@@ -496,10 +492,7 @@ class RabbitMq {
 									);
 								}
 							}
-							if (
-								isSuccess?.error &&
-								blockData?.blocknumber
-							) {
+							if (isSuccess?.error && blockData?.blocknumber) {
 								this.enqueueData(
 									QUEUE_NAME.ERROR_BLOCK,
 									blockData.blocknumber.toString(),

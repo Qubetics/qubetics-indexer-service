@@ -63,7 +63,10 @@ class ProcessHelper {
 						const blockQueue = `${QUEUE_NAME.BLOCKS}_${latestBlockNo
 							.toString()
 							.slice(-1)}`;
-						RabbitMqService.enqueueData(blockQueue, latestBlockNo.toString());
+						RabbitMqService.enqueueData(
+							blockQueue,
+							latestBlockNo.toString(),
+						);
 
 						await RedisService.setString(
 							CONST_NAME.LATEST_BLOCK,
@@ -196,13 +199,16 @@ class ProcessHelper {
 			// Parallelly fetch transaction receipts and process them
 			const transactionsWithReceipts = await Promise.all(
 				transactions.map(async (element) => {
-					const gasPrice = Number(element?.gasPrice || CONST_NAME.ZERO);
+					const gasPrice = Number(
+						element?.gasPrice || CONST_NAME.ZERO,
+					);
 					const gas = element?.gas || CONST_NAME.ZERO;
 					const txFee = (gas * gasPrice) / CONST_NAME.POWER;
 					const burnedFee = (Number(txFee) * 0.2).toFixed(11);
 					const txnType = txType(`${element.to}`, element.input);
 
-					if (txnType === TRANSACTION_TYPE.COIN_TRANSFER) _txns.coin++;
+					if (txnType === TRANSACTION_TYPE.COIN_TRANSFER)
+						_txns.coin++;
 					else if (txnType === TRANSACTION_TYPE.CONTRACT_CREATION)
 						_txns.contractDeployment++;
 
@@ -223,11 +229,16 @@ class ProcessHelper {
 						status: TRANSACTION_STATUS.PENDING,
 						toAddress: element?.to || CONST_NAME.NA,
 						type: txnType,
-						value: exp(`${Number(element?.value) / CONST_NAME.POWER}`),
+						value: exp(
+							`${Number(element?.value) / CONST_NAME.POWER}`,
+						),
 						burnedFee: Number(burnedFee),
 					};
 
-					const txReceipt = await Web3SocketHelper.web3Ws.eth.getTransactionReceipt(element.hash);
+					const txReceipt =
+						await Web3SocketHelper.web3Ws.eth.getTransactionReceipt(
+							element.hash,
+						);
 
 					if (txReceipt) {
 						txExtractedData.status = txReceipt?.status
@@ -240,7 +251,9 @@ class ProcessHelper {
 						txExtractedData.logs = txReceipt.logs || [];
 					} else {
 						const savedPendingTransaction =
-							(await RedisService.getString<any>(REDIS_KEY.PENDING_TX)) || [];
+							(await RedisService.getString<any>(
+								REDIS_KEY.PENDING_TX,
+							)) || [];
 						savedPendingTransaction.push(txExtractedData);
 						await RedisService.setString(
 							REDIS_KEY.PENDING_TX,
@@ -249,7 +262,10 @@ class ProcessHelper {
 					}
 
 					if (txQueue) {
-						RabbitMqService.enqueueData(txQueue, JSON.stringify(txExtractedData));
+						RabbitMqService.enqueueData(
+							txQueue,
+							JSON.stringify(txExtractedData),
+						);
 					}
 
 					await redisHelper.incrementValue(
@@ -258,7 +274,7 @@ class ProcessHelper {
 					);
 
 					return txExtractedData;
-				})
+				}),
 			);
 
 			transactionsArr.push(...transactionsWithReceipts);
@@ -327,7 +343,7 @@ class ProcessHelper {
 					txnCount: Number(
 						(Number(transactions.gas) *
 							Number(transactions.gasPrice)) /
-						1e18,
+							1e18,
 					),
 				}),
 			);
@@ -767,7 +783,6 @@ class ProcessHelper {
 				false,
 			);
 			if (res?.block?.blocknumber) {
-				console.log("res.block-saveDowntimeAndErrBlock", res.block)
 				await explorerHelper.saveBlockData(res.block);
 				return true;
 			}
