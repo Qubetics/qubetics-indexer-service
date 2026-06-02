@@ -75,9 +75,11 @@ class ProcessHelper {
 	}
 
 		private lastWsBlockTime = Date.now();
+
 private httpFallbackTimer: NodeJS.Timeout | null = null;
 
  WS_TIMEOUT = 15_000; // 15 sec
+
  HTTP_INTERVAL = 10_000; // 10 sec
 
 	async subscribeBlocksWs() {

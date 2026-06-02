@@ -829,11 +829,18 @@ class ExlorerHelper {
 		contractAddress: string,
 	) {
 		try {
+			const cachedFloor = await RedisService.getString<number>(
+				REDIS_KEY.PRUNING_FLOOR,
+			);
+			if (cachedFloor && blockNumber < Number(cachedFloor)) {
+				console.log(
+					`Skipping debug_traceTransaction for block ${blockNumber} (pruning floor: ${cachedFloor})`,
+				);
+				return true;
+			}
+
 			const provider = new ethers.JsonRpcProvider(environment.nodeLink);
 			console.log('calls-provider', provider);
-			// const tx = await provider.getTransaction(txHash);
-
-			// const receipt = await provider.getTransactionReceipt(txHash);
 
 			// Send raw RPC call
 			const trace = await provider.send('debug_traceTransaction', [
@@ -880,8 +887,34 @@ class ExlorerHelper {
 			}
 
 			return true;
-		} catch (error) {
-			console.log('error', error);
+		} catch (error: any) {
+			const msg: string = error?.message || '';
+			const isPrunedStateError =
+				msg.includes('version mismatch on immutable IAVL tree') ||
+				msg.includes('Version has either been pruned') ||
+				msg.includes('failed to load state at height') ||
+				msg.includes('is not available, lowest height is') ||
+				msg.includes('no commit info found');
+
+			if (isPrunedStateError) {
+				const match = msg.match(/lowest height is (\d+)/);
+				if (match) {
+					const discoveredFloor = Number(match[1]);
+					await RedisService.setStringWithExpiry(
+						REDIS_KEY.PRUNING_FLOOR,
+						discoveredFloor,
+						6 * 3600,
+					);
+					console.log(
+						`Pruning floor discovered and cached: ${discoveredFloor}`,
+					);
+				}
+				console.log(
+					`Skipping internal txs for pruned block ${blockNumber}: ${msg}`,
+				);
+			} else {
+				console.log('error', error);
+			}
 			return false;
 		}
 	}

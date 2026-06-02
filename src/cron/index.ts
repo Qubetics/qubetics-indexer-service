@@ -535,25 +535,39 @@ class CronService {
 
 	async processOldBlock() {
 		try {
-			// const latestBlock = await web3Helper.getBlockNumber();
-			const lastBlock = BigInt(1).toString();
-			console.log('processOldBlock', lastBlock);
+			const pruningFloor = await RedisService.getString<number>(
+				REDIS_KEY.PRUNING_FLOOR,
+			);
+
 			const updateBlock = await RedisService.getString<number>(
 				CONST_NAME.LATEST_OLD_BLOCK,
 			);
 			console.log('updateBlock', updateBlock);
 
 			if (!updateBlock) {
+				const startBlock = pruningFloor ? Number(pruningFloor) : 1;
 				await RedisService.setString(
 					CONST_NAME.LATEST_OLD_BLOCK,
-					+lastBlock,
+					startBlock,
 				);
+				return true;
 			}
-			console.log('updateBlock', updateBlock);
 
 			const latestBlockNo = Number(updateBlock);
 
-			const nextBlock = +updateBlock + 1;
+			// Fast-forward past pruned range when floor is known
+			if (pruningFloor && latestBlockNo < Number(pruningFloor)) {
+				console.log(
+					`processOldBlock: fast-forwarding from ${latestBlockNo} to pruning floor ${pruningFloor}`,
+				);
+				await RedisService.setString(
+					CONST_NAME.LATEST_OLD_BLOCK,
+					Number(pruningFloor),
+				);
+				return true;
+			}
+
+			const nextBlock = latestBlockNo + 1;
 
 			const blockQueue = `${QUEUE_NAME.DOWNTIME_BLOCK}`;
 			RabbitMqService.enqueueData(blockQueue, latestBlockNo.toString());
@@ -593,10 +607,21 @@ class CronService {
 			const lastBlock = await RedisService.getString(
 				CONST_NAME.INTERNAL_TRNXN_BLOCK,
 			);
+			const pruningFloor = await RedisService.getString<number>(
+				REDIS_KEY.PRUNING_FLOOR,
+			);
 
 			console.log('processInternalTransactions', lastBlock);
-			const latestBlockNo = Number(lastBlock);
-			const nextBlock = +latestBlockNo + 1;
+
+			let latestBlockNo = 0;
+
+if (lastBlock) {
+  latestBlockNo = Number(lastBlock);
+} else if (pruningFloor) {
+  latestBlockNo = Number(pruningFloor);
+}
+
+			const nextBlock = latestBlockNo + 1;
 
 			const internalTxnQueue = `${QUEUE_NAME.MISSING_INTERNAL_TRXNS}`;
 			RabbitMqService.enqueueData(
