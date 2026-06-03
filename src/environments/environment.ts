@@ -48,7 +48,7 @@ class Environment implements IEnvironment {
 
 	public projectName: string;
 
-	public delegatorPrefix:string;
+	public delegatorPrefix: string;
 
 	/**
 	 *

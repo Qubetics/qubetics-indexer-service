@@ -828,17 +828,19 @@ class ExlorerHelper {
 		timestamp: Date,
 		contractAddress: string,
 	) {
-		try {
-			const cachedFloor = await RedisService.getString<number>(
-				REDIS_KEY.PRUNING_FLOOR,
-			);
-			if (cachedFloor && blockNumber < Number(cachedFloor)) {
-				console.log(
-					`Skipping debug_traceTransaction for block ${blockNumber} (pruning floor: ${cachedFloor})`,
-				);
-				return true;
-			}
+		// Read floor once here — passed into the catch to avoid a second Redis GET
+		const floorValue = Number(
+			(await RedisService.getString<number>(REDIS_KEY.PRUNING_FLOOR)) || 0,
+		);
 
+		if (floorValue > 0 && blockNumber <= floorValue) {
+			console.log(
+				`Skipping debug_traceTransaction for block ${blockNumber} (pruning floor: ${floorValue})`,
+			);
+			return true;
+		}
+
+		try {
 			const provider = new ethers.JsonRpcProvider(environment.nodeLink);
 			console.log('calls-provider', provider);
 
@@ -897,25 +899,55 @@ class ExlorerHelper {
 				msg.includes('no commit info found');
 
 			if (isPrunedStateError) {
-				const match = msg.match(/lowest height is (\d+)/);
-				if (match) {
-					const discoveredFloor = Number(match[1]);
-					await RedisService.setStringWithExpiry(
-						REDIS_KEY.PRUNING_FLOOR,
-						discoveredFloor,
-						6 * 3600,
-					);
-					console.log(
-						`Pruning floor discovered and cached: ${discoveredFloor}`,
-					);
-				}
+				// Pass the already-read floor to avoid a second Redis GET
+				await this.updatePruningFloor(msg, blockNumber, floorValue);
 				console.log(
 					`Skipping internal txs for pruned block ${blockNumber}: ${msg}`,
 				);
-			} else {
-				console.log('error', error);
+				// Return true so handleInternalTransactions does NOT re-queue this block
+				return true;
 			}
+
+			console.log('error', error);
 			return false;
+		}
+	}
+
+	private async updatePruningFloor(
+		errorMsg: string,
+		blockNumber: number,
+		currentFloor: number,
+	): Promise<void> {
+		try {
+			// Pattern 1: explicit floor in message, e.g. "lowest height is 4045001"
+			const explicitMatch = errorMsg.match(/lowest height is (\d+)/);
+			if (explicitMatch) {
+				const floor = Number(explicitMatch[1]);
+				if (floor > currentFloor) {
+					// No TTL — the floor only ever moves upward, never needs expiry
+					await RedisService.setString(REDIS_KEY.PRUNING_FLOOR, floor);
+					console.log(`Pruning floor updated (explicit): ${floor}`);
+				}
+				return;
+			}
+
+			// Pattern 2: infer from "latest height: X" in the error.
+			// If the failing block is more than 1M behind the tip it is almost
+			// certainly below the hard floor (not just sparse-pruned), so we
+			// use blockNumber as a high-water mark for the floor.
+			const latestMatch = errorMsg.match(/latest height[:\s]+(\d+)/);
+			if (latestMatch) {
+				const latestHeight = Number(latestMatch[1]);
+				if (latestHeight - blockNumber > 1_000_000 && blockNumber > currentFloor) {
+					// No TTL — floor is monotonically increasing
+					await RedisService.setString(REDIS_KEY.PRUNING_FLOOR, blockNumber);
+					console.log(
+						`Pruning floor updated (inferred): ${blockNumber} (tip: ${latestHeight})`,
+					);
+				}
+			}
+		} catch (err) {
+			console.log('Error updating pruning floor:', err);
 		}
 	}
 

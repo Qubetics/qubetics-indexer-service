@@ -556,13 +556,13 @@ class CronService {
 			const latestBlockNo = Number(updateBlock);
 
 			// Fast-forward past pruned range when floor is known
-			if (pruningFloor && latestBlockNo < Number(pruningFloor)) {
+			if (pruningFloor && latestBlockNo <= Number(pruningFloor)) {
 				console.log(
 					`processOldBlock: fast-forwarding from ${latestBlockNo} to pruning floor ${pruningFloor}`,
 				);
 				await RedisService.setString(
 					CONST_NAME.LATEST_OLD_BLOCK,
-					Number(pruningFloor),
+					Number(pruningFloor) + 1,
 				);
 				return true;
 			}
@@ -615,11 +615,11 @@ class CronService {
 
 			let latestBlockNo = 0;
 
-if (lastBlock) {
-  latestBlockNo = Number(lastBlock);
-} else if (pruningFloor) {
-  latestBlockNo = Number(pruningFloor);
-}
+			if (lastBlock) {
+				latestBlockNo = Number(lastBlock);
+			} else if (pruningFloor) {
+				latestBlockNo = Number(pruningFloor);
+			}
 
 			const nextBlock = latestBlockNo + 1;
 

@@ -74,108 +74,105 @@ class ProcessHelper {
 		}
 	}
 
-		private lastWsBlockTime = Date.now();
+	private lastWsBlockTime = Date.now();
 
-private httpFallbackTimer: NodeJS.Timeout | null = null;
+	private httpFallbackTimer: NodeJS.Timeout | null = null;
 
- WS_TIMEOUT = 15_000; // 15 sec
+	WS_TIMEOUT = 15_000; // 15 sec
 
- HTTP_INTERVAL = 10_000; // 10 sec
+	HTTP_INTERVAL = 10_000; // 10 sec
 
 	async subscribeBlocksWs() {
-	try {
-		const sub = Web3SocketHelper.web3Ws.eth.subscribe(
-			'newBlockHeaders',
-			async (error: any, blockHeader: any) => {
-				if (error) {
-					logger.error('WS block error', error);
-					return;
-				}
+		try {
+			const sub = Web3SocketHelper.web3Ws.eth.subscribe(
+				'newBlockHeaders',
+				async (error: any, blockHeader: any) => {
+					if (error) {
+						logger.error('WS block error', error);
+						return;
+					}
 
-				this.lastWsBlockTime = Date.now(); // ✅ WS alive
+					this.lastWsBlockTime = Date.now(); // ✅ WS alive
 
-				const latestBlockNo = Number(blockHeader?.number);
-				logger.info(`WS Block: ${latestBlockNo}`);
+					const latestBlockNo = Number(blockHeader?.number);
+					logger.info(`WS Block: ${latestBlockNo}`);
 
-				const blockQueue = `${QUEUE_NAME.BLOCKS}_${latestBlockNo
-					.toString()
-					.slice(-1)}`;
+					const blockQueue = `${QUEUE_NAME.BLOCKS}_${latestBlockNo
+						.toString()
+						.slice(-1)}`;
 
-				this.processblock(
-					latestBlockNo,
-					QUEUE_NAME.TRANSACTIONS,
-					blockQueue,
-					true,
-					true,
-				);
+					this.processblock(
+						latestBlockNo,
+						QUEUE_NAME.TRANSACTIONS,
+						blockQueue,
+						true,
+						true,
+					);
 
-				await RedisService.setString(
-					CONST_NAME.LATEST_BLOCK,
-					latestBlockNo,
-				);
-			},
-		);
+					await RedisService.setString(
+						CONST_NAME.LATEST_BLOCK,
+						latestBlockNo,
+					);
+				},
+			);
 
-		sub.on('connected', () => {
-			logger.info('WS block subscription connected');
-			this.startHttpFallbackWatcher(); // 👈 important
-		});
+			sub.on('connected', () => {
+				logger.info('WS block subscription connected');
+				this.startHttpFallbackWatcher(); // 👈 important
+			});
 
-		sub.on('error', (err) => {
-			logger.error('WS subscription error', err);
-		});
-	} catch (err) {
-		logger.error('Error in subscribeBlocksWs', err);
+			sub.on('error', (err) => {
+				logger.error('WS subscription error', err);
+			});
+		} catch (err) {
+			logger.error('Error in subscribeBlocksWs', err);
+		}
 	}
-}
 
 	startHttpFallbackWatcher() {
-	if (this.httpFallbackTimer) return;
+		if (this.httpFallbackTimer) return;
 
-	this.httpFallbackTimer = setInterval(async () => {
-		const diff = Date.now() - this.lastWsBlockTime;
+		this.httpFallbackTimer = setInterval(async () => {
+			const diff = Date.now() - this.lastWsBlockTime;
 
-		// WS healthy → nothing to do
-		if (diff < this.WS_TIMEOUT) return;
+			// WS healthy → nothing to do
+			if (diff < this.WS_TIMEOUT) return;
 
-		logger.warn('WS inactive, switching to HTTP fallback');
+			logger.warn('WS inactive, switching to HTTP fallback');
 
-		try {
-			await this.fetchLatestBlockHttp();
-		} catch (err) {
-			logger.error('HTTP fallback error', err);
-		}
-	}, this.HTTP_INTERVAL);
-}
+			try {
+				await this.fetchLatestBlockHttp();
+			} catch (err) {
+				logger.error('HTTP fallback error', err);
+			}
+		}, this.HTTP_INTERVAL);
+	}
 
 	async fetchLatestBlockHttp() {
-	const latestBlockNo = await Web3Helper.getBlockNumber();
+		const latestBlockNo = await Web3Helper.getBlockNumber();
 
-	const lastSaved =
-		Number(await RedisService.getString(CONST_NAME.LATEST_BLOCK)) || 0;
+		const lastSaved =
+			Number(await RedisService.getString(CONST_NAME.LATEST_BLOCK)) || 0;
 
-	// avoid duplicate processing
-	if (latestBlockNo <= lastSaved) return;
+		// avoid duplicate processing
+		if (latestBlockNo <= lastSaved) return;
 
-	logger.info(`HTTP Block: ${latestBlockNo}`);
+		logger.info(`HTTP Block: ${latestBlockNo}`);
 
-	const blockQueue = `${QUEUE_NAME.BLOCKS}_${latestBlockNo
-		.toString()
-		.slice(-1)}`;
+		const blockQueue = `${QUEUE_NAME.BLOCKS}_${latestBlockNo
+			.toString()
+			.slice(-1)}`;
 
-	this.processblock(
-		latestBlockNo,
-		QUEUE_NAME.TRANSACTIONS,
-		blockQueue,
-		true,
-		true,
-	);
+		this.processblock(
+			latestBlockNo,
+			QUEUE_NAME.TRANSACTIONS,
+			blockQueue,
+			true,
+			true,
+		);
 
-	await RedisService.setString(
-		CONST_NAME.LATEST_BLOCK,
-		latestBlockNo,
-	);
-}
+		await RedisService.setString(CONST_NAME.LATEST_BLOCK, latestBlockNo);
+	}
 
 	/**
 	 * Process Block data and transactions inside a block
@@ -1123,7 +1120,8 @@ private httpFallbackTimer: NodeJS.Timeout | null = null;
 				}
 				return true;
 			}
-			return false;
+			// No transactions in this block — nothing to trace, not a failure
+			return true;
 
 			/* eslint-disable no-await-in-loop */
 			// Disable the rule for the next line
